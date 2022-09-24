@@ -1,0 +1,31 @@
+{
+  "name": "Mistwar",
+  "version": "1.0.8",
+  "namespace": "Nekres.Mistwar",
+  "package": "Mistwar.dll",
+  "manifest_version": 1,
+
+  "description": "A tactical map and head-up display for World VS. World to track objectives, their timers and territory control.",
+  "dependencies": {
+    "bh.blishhud": ">=0.11.6"
+  },
+  "url": "https://github.com/agaertner/Blish-HUD-Modules-Releases",
+  "enabled_without_gw2": false,
+  "directories": [ "mistwar" ],
+  "contributors": [
+    {
+      "name": "Nekres",
+      "username": "Nekres.1943"
+    }
+  ],
+  "api_permissions": {
+    "account": {
+      "optional": false,
+      "details": "Required to get the current match your guild alliance is participating in."
+    },
+    "characters": {
+      "optional": true,
+      "details": "Required to get your current represented guild."
+    }
+  }
+}
