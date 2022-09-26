@@ -67,31 +67,72 @@ namespace Nekres.Mistwar
         protected override void DefineSettings(SettingCollection settings)
         {
             var generalSettings = settings.AddSubCollection("General", true, false);
-            ColorTypeSetting = generalSettings.DefineSetting("ColorType", ColorType.Normal, () => "Color Type", () => "Select a different color type if you have a color deficiency.");
-            TeamShapesSetting = generalSettings.DefineSetting("TeamShapes", true, () => "Team Shapes", () => "Enables uniquely shaped objective markers per team.");
+            generalSettings.RenderInUi = true; // TODO: Remove this line with BlishHUD>=0.11.8
+            ColorTypeSetting = generalSettings.DefineSetting("ColorType", ColorType.Normal, 
+                () => "Color Type", 
+                () => "Select a different color type if you have a color deficiency.");
+            TeamShapesSetting = generalSettings.DefineSetting("TeamShapes", true, 
+                () => "Team Shapes", 
+                () => "Enables uniquely shaped objective markers per team.");
 
             var hotKeySettings = settings.AddSubCollection("Control Options", true, false);
-            ToggleMapKeySetting = hotKeySettings.DefineSetting("ToggleKey", new KeyBinding(Keys.N), () => "Toggle Map", () => "Key used to show and hide the strategic map.");
-            ToggleMarkersKeySetting = hotKeySettings.DefineSetting("ToggleMarkersKey", new KeyBinding(Keys.OemOpenBrackets), () => "Toggle Markers", () => "Key used to show and hide the objective markers.");
-            ChatMessageKeySetting = hotKeySettings.DefineSetting("ChatMessageKey", new KeyBinding(Keys.Enter), () => "Chat Message", () => "Give focus to the chat edit box.");
+            hotKeySettings.RenderInUi = true; // TODO: Remove this line with BlishHUD>=0.11.8
+            ToggleMapKeySetting = hotKeySettings.DefineSetting("ToggleKey", new KeyBinding(Keys.N), 
+                () => "Toggle Map", 
+                () => "Key used to show and hide the strategic map.");
+            ToggleMarkersKeySetting = hotKeySettings.DefineSetting("ToggleMarkersKey", new KeyBinding(Keys.OemOpenBrackets), 
+                () => "Toggle Markers", () => "Key used to show and hide the objective markers.");
+            ChatMessageKeySetting = hotKeySettings.DefineSetting("ChatMessageKey", new KeyBinding(Keys.Enter), 
+                () => "Chat Message", 
+                () => "Give focus to the chat edit box.");
 
             var mapSettings = settings.AddSubCollection("Map", true, false);
-            DrawSectorsSetting = mapSettings.DefineSetting("DrawSectors", true, () => "Show Sector Boundaries", () => "Indicates if the sector boundaries should be drawn.");
-            DrawObjectiveNamesSetting = mapSettings.DefineSetting("DrawObjectiveNames", true, () => "Show Objective Names", () => "Indicates if the names of the objectives should be drawn.");
-            DrawRuinMapSetting = mapSettings.DefineSetting("ShowRuins", true, () => "Show Ruins", () => "Indicates if the ruins should be shown.");
-            DrawEmergencyWayPointsSetting = mapSettings.DefineSetting("ShowEmergencyWayPoints", false, () => "Show Emergency Waypoints", () => "Shows your team's Emergency Waypoints.");
-            OpacitySetting = mapSettings.DefineSetting("Opacity", 80f, () => "Opacity", () => "Changes the opacity of the tactical map interface.");
-            ColorIntensitySetting = mapSettings.DefineSetting("ColorIntensity", 80f, () => "Color Intensity", () => "Intensity of the background color.");
-            ScaleRatioSetting = mapSettings.DefineSetting("ScaleRatio", 80f, () => "Scale Ratio", () => "Changes the size of the tactical map interface");
+            mapSettings.RenderInUi = true; // TODO: Remove this line with BlishHUD>=0.11.8
+            DrawSectorsSetting = mapSettings.DefineSetting("DrawSectors", true, 
+                () => "Show Sector Boundaries", 
+                () => "Indicates if the sector boundaries should be drawn.");
+            DrawObjectiveNamesSetting = mapSettings.DefineSetting("DrawObjectiveNames", true, 
+                () => "Show Objective Names", 
+                () => "Indicates if the names of the objectives should be drawn.");
+            DrawRuinMapSetting = mapSettings.DefineSetting("ShowRuins", true, 
+                () => "Show Ruins", 
+                () => "Indicates if the ruins should be shown.");
+            DrawEmergencyWayPointsSetting = mapSettings.DefineSetting("ShowEmergencyWayPoints", false, 
+                () => "Show Emergency Waypoints", 
+                () => "Shows your team's Emergency Waypoints.");
+            OpacitySetting = mapSettings.DefineSetting("Opacity", 80f, 
+                () => "Opacity", 
+                () => "Changes the opacity of the tactical map interface.");
+            ColorIntensitySetting = mapSettings.DefineSetting("ColorIntensity", 80f, 
+                () => "Color Intensity", 
+                () => "Intensity of the background color.");
+            ScaleRatioSetting = mapSettings.DefineSetting("ScaleRatio", 80f, 
+                () => "Scale Ratio", 
+                () => "Changes the size of the tactical map interface");
 
             var markerSettings = settings.AddSubCollection("Markers", true, false);
-            EnableMarkersSetting = markerSettings.DefineSetting("EnableMarkers", true, () => "Enable Markers", () => "Enables the markers overlay which shows objectives at their world position.");
-            HideAlliedMarkersSetting = markerSettings.DefineSetting("HideAlliedMarkers", false, () => "Hide Allied Objectives", () => "Only hostile objectives will be shown.");
-            HideInCombatSetting = markerSettings.DefineSetting("HideInCombat", true, () => "Hide in Combat", () => "Only the closest objective will be shown when in combat.");
-            DrawRuinMarkersSetting = markerSettings.DefineSetting("ShowRuinMarkers", true, () => "Show Ruins", () => "Show markers for the ruins.");
-            DrawDistanceSetting = markerSettings.DefineSetting("ShowDistance", true, () => "Show Distance", () => "Show flight distance to objectives.");
-            MaxViewDistanceSetting = markerSettings.DefineSetting("MaxViewDistance", 50f, () => "Max View Distance", () => "The max view distance at which an objective marker can be seen.");
-            MarkerScaleSetting = markerSettings.DefineSetting("ScaleRatio", 70f, () => "Scale Ratio", () => "Changes the size of the markers.");
+            markerSettings.RenderInUi = true;
+            EnableMarkersSetting = markerSettings.DefineSetting("EnableMarkers", true, 
+                () => "Enable Markers", 
+                () => "Enables the markers overlay which shows objectives at their world position.");
+            HideAlliedMarkersSetting = markerSettings.DefineSetting("HideAlliedMarkers", false, 
+                () => "Hide Allied Objectives", 
+                () => "Only hostile objectives will be shown.");
+            HideInCombatSetting = markerSettings.DefineSetting("HideInCombat", true, 
+                () => "Hide in Combat", 
+                () => "Only the closest objective will be shown when in combat.");
+            DrawRuinMarkersSetting = markerSettings.DefineSetting("ShowRuinMarkers", true, 
+                () => "Show Ruins", 
+                () => "Show markers for the ruins.");
+            DrawDistanceSetting = markerSettings.DefineSetting("ShowDistance", true, 
+                () => "Show Distance", 
+                () => "Show flight distance to objectives.");
+            MaxViewDistanceSetting = markerSettings.DefineSetting("MaxViewDistance", 50f, 
+                () => "Max View Distance", 
+                () => "The max view distance at which an objective marker can be seen.");
+            MarkerScaleSetting = markerSettings.DefineSetting("ScaleRatio", 70f, 
+                () => "Scale Ratio", 
+                () => "Changes the size of the markers.");
         }
 
         private AsyncTexture2D _cornerTex;
