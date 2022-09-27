@@ -66,8 +66,8 @@ namespace Nekres.Mistwar
 
         protected override void DefineSettings(SettingCollection settings)
         {
-            var generalSettings = settings.AddSubCollection("General", true, false);
-            generalSettings.RenderInUi = true; // TODO: Remove this line with BlishHUD>=0.11.8
+            var generalSettings = settings.AddSubCollection("General");
+            generalSettings.RenderInUi = true;
             ColorTypeSetting = generalSettings.DefineSetting("ColorType", ColorType.Normal, 
                 () => "Color Type", 
                 () => "Select a different color type if you have a color deficiency.");
@@ -75,8 +75,8 @@ namespace Nekres.Mistwar
                 () => "Team Shapes", 
                 () => "Enables uniquely shaped objective markers per team.");
 
-            var hotKeySettings = settings.AddSubCollection("Control Options", true, false);
-            hotKeySettings.RenderInUi = true; // TODO: Remove this line with BlishHUD>=0.11.8
+            var hotKeySettings = settings.AddSubCollection("Control Options");
+            hotKeySettings.RenderInUi = true;
             ToggleMapKeySetting = hotKeySettings.DefineSetting("ToggleKey", new KeyBinding(Keys.N), 
                 () => "Toggle Map", 
                 () => "Key used to show and hide the strategic map.");
@@ -86,8 +86,8 @@ namespace Nekres.Mistwar
                 () => "Chat Message", 
                 () => "Give focus to the chat edit box.");
 
-            var mapSettings = settings.AddSubCollection("Map", true, false);
-            mapSettings.RenderInUi = true; // TODO: Remove this line with BlishHUD>=0.11.8
+            var mapSettings = settings.AddSubCollection("Map");
+            mapSettings.RenderInUi = true;
             DrawSectorsSetting = mapSettings.DefineSetting("DrawSectors", true, 
                 () => "Show Sector Boundaries", 
                 () => "Indicates if the sector boundaries should be drawn.");
