@@ -95,7 +95,7 @@ namespace Nekres.Mistwar
             }
 
             if (!drawDistance) return;
-            var distance = objectiveEntity.GetDistance() - 25;
+            var distance = objectiveEntity.GetDistance() - 25; // -25 measures up to the edge of a capture point.
             if (distance > 1)
             {
                 var text = distance >= 1000 ? $"{distance / 1000:N2}km" : $"{distance:N0}m";
