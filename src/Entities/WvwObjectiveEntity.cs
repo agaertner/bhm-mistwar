@@ -188,7 +188,7 @@ namespace Nekres.Mistwar.Entities
 
         public bool IsOwned()
         {
-            return (int)this.Owner <= 1;
+            return this.Owner is WvwOwner.Red or WvwOwner.Green or WvwOwner.Red;
         }
 
         public bool IsClaimed()
@@ -213,7 +213,7 @@ namespace Nekres.Mistwar.Entities
 
         public bool HasRegularWaypoint()
         {
-            return IsSpawn() || GetTier() == WvwObjectiveTier.Fortified && (Type == WvwObjectiveType.Keep || Type == WvwObjectiveType.Castle);
+            return IsSpawn() || GetTier() == WvwObjectiveTier.Fortified && this.Type is WvwObjectiveType.Keep or WvwObjectiveType.Castle;
         }
 
         public bool IsSpawn()
@@ -223,7 +223,9 @@ namespace Nekres.Mistwar.Entities
 
         public WvwObjectiveTier GetTier()
         {
-            return YaksDelivered >= 140 ? WvwObjectiveTier.Fortified : YaksDelivered >= 60 ? WvwObjectiveTier.Reinforced : YaksDelivered >= 20 ? WvwObjectiveTier.Secured : WvwObjectiveTier.Supported;
+            return YaksDelivered >= 140 ? WvwObjectiveTier.Fortified : 
+                   YaksDelivered >= 60 ? WvwObjectiveTier.Reinforced : 
+                   YaksDelivered >= 20 ? WvwObjectiveTier.Secured : WvwObjectiveTier.Supported;
         }
 
         public bool HasBuff(out TimeSpan remainingTime)
