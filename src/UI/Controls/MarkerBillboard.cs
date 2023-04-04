@@ -48,7 +48,7 @@ namespace Nekres.Mistwar.UI.Controls
             }
 
             // Order by distance.
-            var distanceSort = objectives.OrderBy(x => x.GetDistance()).ToList();
+            var distanceSort = objectives.OrderByDescending(x => x.GetDistance()).ToList(); // Draw further markers first so that closer ones are drawn ontop.
             if (MistwarModule.ModuleInstance.HideInCombatSetting.Value && GameService.Gw2Mumble.PlayerCharacter.IsInCombat)
             {
                 distanceSort = distanceSort.IsNullOrEmpty() ? distanceSort : distanceSort.Take(1).ToList(); // Show only the closest objective during combat.
