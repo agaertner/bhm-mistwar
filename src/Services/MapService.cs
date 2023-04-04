@@ -1,6 +1,7 @@
 ﻿using Blish_HUD;
 using Blish_HUD.Content;
 using Blish_HUD.Controls;
+using Blish_HUD.Extended;
 using Blish_HUD.Modules.Managers;
 using Gw2Sharp.WebApi.V2.Models;
 using Microsoft.Xna.Framework;
@@ -9,18 +10,13 @@ using Nekres.Mistwar.UI.Controls;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
-using Blish_HUD.Extended;
 using File = System.IO.File;
 
-namespace Nekres.Mistwar.Services
-{
+namespace Nekres.Mistwar.Services {
     internal class MapService : IDisposable
     {
-        private const int MAX_MAP_LOAD_RETRIES = 2;
-
         private DirectoriesManager _dir;
         private WvwService _wvw;
 
@@ -56,8 +52,6 @@ namespace Nekres.Mistwar.Services
 
         private Dictionary<int, AsyncTexture2D> _mapCache;
 
-        private int _mapLoadRetries;
-
         public MapService(DirectoriesManager dir, WvwService wvw, IProgress<string> loadingIndicator)
         {
             _dir = dir;
@@ -78,7 +72,9 @@ namespace Nekres.Mistwar.Services
 
         public void DownloadMaps(int[] mapIds)
         {
-            if (mapIds.IsNullOrEmpty()) return;
+            if (mapIds.IsNullOrEmpty()) {
+                return;
+            }
 
             var thread = new Thread(() => LoadMapsInBackground(mapIds))
             {
@@ -93,9 +89,8 @@ namespace Nekres.Mistwar.Services
             this.IsLoading = true;
             foreach (var id in mapIds)
             {
-                var t = new Task<Task>(async () => await DownloadMapImage(id));
-                t.Start();
-                t.Unwrap().Wait();
+                var t = DownloadMapImage(id);
+                t.Wait();
                 // Progress indicator cannot yet handle total percentage of all tasks combined hence we do not use Task.WaitAll(taskList).
                 // Considering tile download on slow connections and tile structuring on low-end hardware in addition to loosing indicator info depth a
                 // refactor of the code to support it would not yield much value.
@@ -106,7 +101,6 @@ namespace Nekres.Mistwar.Services
 
         private async Task DownloadMapImage(int id)
         {
-            _mapLoadRetries = 0;
             if (!_mapCache.TryGetValue(id, out var cacheTex))
             {
                 cacheTex = new AsyncTexture2D();
@@ -121,60 +115,59 @@ namespace Nekres.Mistwar.Services
                 return;
             }
 
-            await MapUtil.BuildMap(await MapUtil.GetMap(id), filePath, true, _loadingIndicator).ContinueWith(async _ =>
-            {
-                if (!LoadFromCache(filePath, cacheTex))
-                {
-                    if (_mapLoadRetries > MAX_MAP_LOAD_RETRIES)
-                    {
-                        return;
-                    }
-                    _mapLoadRetries++;
-                    await DownloadMapImage(id);
-                    return;
-                }
+            var map = await MapUtil.GetMap(id);
+
+            if (map == null) {
+                return;
+            }
+
+            await MapUtil.BuildMap(map, filePath, true, _loadingIndicator);
+
+            if (LoadFromCache(filePath, cacheTex)) {
                 await ReloadMap();
-            });
+            }
         }
 
-        private bool LoadFromCache(string filePath, AsyncTexture2D cacheTex)
+        private bool LoadFromCache(string filePath, AsyncTexture2D cacheTex, int retries = 2, int delayMs = 2000)
         {
-            var timeout = DateTime.UtcNow.AddSeconds(5);
-            while (timeout > DateTime.UtcNow)
-            {
-                try
-                {
-                    if (!File.Exists(filePath)) continue;
-                    using var fil = new MemoryStream(File.ReadAllBytes(filePath));
-                    var tex = Texture2D.FromStream(GameService.Graphics.GraphicsDevice, fil);
-                    cacheTex.SwapTexture(tex);
-                    return true;
+            try {
+                using var fil = new MemoryStream(File.ReadAllBytes(filePath));
+                using var gdc = GameService.Graphics.LendGraphicsDeviceContext();
+                var       tex = Texture2D.FromStream(gdc.GraphicsDevice, fil);
+                cacheTex.SwapTexture(tex);
+                return true;
+            } catch (Exception e) {
+                if (retries > 0) {
+                    MistwarModule.Logger.Warn(e, $"Failed to load map images from disk. Retrying in {delayMs / 1000} second(s) (remaining retries: {retries}).");
+                    Task.Delay(delayMs).Wait();
+                    LoadFromCache(filePath, cacheTex, retries - 1, delayMs);
                 }
-                catch (Exception e) when (e is IOException or UnauthorizedAccessException or SecurityException or ArgumentException or InvalidOperationException)
-                {
-                    if (DateTime.UtcNow < timeout) continue;
-                    MistwarModule.Logger.Error(e, e.Message);
-                    return false;
-                }
+                MistwarModule.Logger.Warn(e, $"After multiple attempts '{filePath}' could not be loaded.");
+                return false;
             }
-            return false;
         }
 
         public async Task ReloadMap()
         {
-            if (GameService.Gw2Mumble.CurrentMap.Type.IsWvWMatch() && _mapCache.TryGetValue(GameService.Gw2Mumble.CurrentMap.Id, out var tex))
-            {
-                _mapControl.Texture.SwapTexture(tex);
-
-                _mapControl.Map = await GetMap(GameService.Gw2Mumble.CurrentMap.Id);
-
-                await _wvw.GetObjectives(GameService.Gw2Mumble.CurrentMap.Id).ContinueWith(t =>
-                {
-                    if (t.IsFaulted || t.Result == null) return;
-                    _mapControl.WvwObjectives = t.Result;
-                    MistwarModule.ModuleInstance?.MarkerService?.ReloadMarkers(t.Result);
-                });
+            if (!GameService.Gw2Mumble.CurrentMap.Type.IsWvWMatch()) {
+                return;
             }
+
+            if (!_mapCache.TryGetValue(GameService.Gw2Mumble.CurrentMap.Id, out var tex) || tex == null) {
+                return;
+            }
+
+            _mapControl.Texture.SwapTexture(tex);
+
+            _mapControl.Map = await GetMap(GameService.Gw2Mumble.CurrentMap.Id);
+
+            var wvwObjectives = await _wvw.GetObjectives(GameService.Gw2Mumble.CurrentMap.Id);
+
+            if (wvwObjectives.IsNullOrEmpty()) {
+                return;
+            }
+            _mapControl.WvwObjectives = wvwObjectives;
+            MistwarModule.ModuleInstance?.MarkerService?.ReloadMarkers(wvwObjectives);
         }
 
         private async Task<ContinentFloorRegionMap> GetMap(int mapId)
@@ -187,7 +180,7 @@ namespace Nekres.Mistwar.Services
         {
             if (IsLoading)
             {
-                ScreenNotification.ShowNotification("Mistwar is initializing.", ScreenNotification.NotificationType.Error);
+                ScreenNotification.ShowNotification($"({MistwarModule.ModuleInstance.Name}) Map images are being prepared...", ScreenNotification.NotificationType.Error);
                 return;
             }
             _mapControl?.Toggle(forceHide, silent);
@@ -195,13 +188,19 @@ namespace Nekres.Mistwar.Services
 
         private void OnIsMapOpenChanged(object o, ValueEventArgs<bool> e)
         {
-            if (!e.Value) return;
+            if (!e.Value) {
+                return;
+            }
+
             this.Toggle(true, true);
         }
 
         private void OnIsInGameChanged(object o, ValueEventArgs<bool> e)
         {
-            if (e.Value) return;
+            if (e.Value) {
+                return;
+            }
+
             this.Toggle(true, true);
         }
 

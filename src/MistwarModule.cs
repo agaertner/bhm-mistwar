@@ -167,17 +167,17 @@ namespace Nekres.Mistwar
 
         protected override void OnModuleLoaded(EventArgs e)
         {
-            Gw2ApiManager.SubtokenUpdated += OnSubtokenUpdated;
-            ColorIntensitySetting.SettingChanged += OnColorIntensitySettingChanged;
-            ToggleMapKeySetting.Value.Activated += OnToggleKeyActivated;
-            ToggleMarkersKeySetting.Value.Activated += OnToggleMarkersKeyActivated;
-            OpacitySetting.SettingChanged += OnOpacitySettingChanged;
-            EnableMarkersSetting.SettingChanged += OnEnableMarkersSettingChanged;
-            GameService.Gw2Mumble.CurrentMap.MapChanged += OnMapChanged;
-            GameService.Gw2Mumble.UI.IsMapOpenChanged += OnIsMapOpenChanged;
+            Gw2ApiManager.SubtokenUpdated                           += OnSubtokenUpdated;
+            ColorIntensitySetting.SettingChanged                    += OnColorIntensitySettingChanged;
+            ToggleMapKeySetting.Value.Activated                     += OnToggleKeyActivated;
+            ToggleMarkersKeySetting.Value.Activated                 += OnToggleMarkersKeyActivated;
+            OpacitySetting.SettingChanged                           += OnOpacitySettingChanged;
+            EnableMarkersSetting.SettingChanged                     += OnEnableMarkersSettingChanged;
+            GameService.Gw2Mumble.CurrentMap.MapChanged             += OnMapChanged;
+            GameService.Gw2Mumble.UI.IsMapOpenChanged               += OnIsMapOpenChanged;
             GameService.GameIntegration.Gw2Instance.IsInGameChanged += OnIsInGameChanged;
-            ToggleMapKeySetting.Value.Enabled = true;
-            ToggleMarkersKeySetting.Value.Enabled = true;
+            ToggleMapKeySetting.Value.Enabled                       =  true;
+            ToggleMarkersKeySetting.Value.Enabled                   =  true;
 
             OnColorIntensitySettingChanged(null, new ValueChangedEventArgs<float>(0, ColorIntensitySetting.Value));
             OnOpacitySettingChanged(null, new ValueChangedEventArgs<float>(0, OpacitySetting.Value));
@@ -195,10 +195,13 @@ namespace Nekres.Mistwar
 
         private void UpdateModuleLoading(string loadingMessage)
         {
-            if (_moduleIcon == null) return;
+            if (_moduleIcon == null) {
+                return;
+            }
+
             _moduleIcon.LoadingMessage = loadingMessage;
             if (loadingMessage == null && !GameService.Gw2Mumble.CurrentMap.Type.IsWvWMatch()) {
-                _moduleIcon?.Dispose(); // Show during initialization, but hide on completion if we are not in WvW.
+                _moduleIcon?.Dispose(); // Dispose on completion of initialization if we are not in WvW.
             }
         }
 
@@ -209,6 +212,10 @@ namespace Nekres.Mistwar
 
         private async void OnSubtokenUpdated(object o, ValueEventArgs<IEnumerable<TokenPermission>> e)
         {
+            if (!Gw2ApiManager.HasPermission(TokenPermission.Account)) {
+                return;
+            }
+
             _mapService.DownloadMaps(await WvwService.GetWvWMapIds(await WvwService.GetWorldId()));
         }
 
@@ -230,7 +237,10 @@ namespace Nekres.Mistwar
 
         protected override async void Update(GameTime gameTime)
         {
-            if (!Gw2ApiManager.HasPermission(TokenPermission.Account)) return;
+            if (!Gw2ApiManager.HasPermission(TokenPermission.Account)) {
+                return;
+            }
+
             await WvwService.Update();
         }
 
@@ -277,7 +287,10 @@ namespace Nekres.Mistwar
             if (e.NewValue)
             {
                 MarkerService ??= new MarkerService();
-                if (!GameService.Gw2Mumble.CurrentMap.Type.IsWvWMatch()) return;
+                if (!GameService.Gw2Mumble.CurrentMap.Type.IsWvWMatch()) {
+                    return;
+                }
+
                 var obj = await WvwService.GetObjectives(GameService.Gw2Mumble.CurrentMap.Id);
                 MarkerService?.ReloadMarkers(obj);
                 MarkerService?.Toggle(_mapService.IsVisible);

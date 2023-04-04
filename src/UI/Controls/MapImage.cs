@@ -32,7 +32,10 @@ namespace Nekres.Mistwar.UI.Controls
             get => _map;
             set
             {
-                if (!SetProperty(ref _map, value)) return;
+                if (!SetProperty(ref _map, value)) {
+                    return;
+                }
+
                 _wayPointBounds?.Clear();
             }
         }
@@ -77,12 +80,15 @@ namespace Nekres.Mistwar.UI.Controls
 
         private Dictionary<int, Rectangle> _wayPointBounds;
 
+        private Texture2D _warnTriangle;
+
         public MapImage()
         {
-            _wayPointBounds = new Dictionary<int, Rectangle>();
-            _playerArrow = MistwarModule.ModuleInstance.ContentsManager.GetTexture("156081.png");
+            _wayPointBounds        = new Dictionary<int, Rectangle>();
+            _playerArrow           = MistwarModule.ModuleInstance.ContentsManager.GetTexture("156081.png");
+            _warnTriangle          = GameService.Content.GetTexture("common/1444522");
             _spriteBatchParameters = new SpriteBatchParameters();
-            _grayscaleEffect = MistwarModule.ModuleInstance.ContentsManager.GetEffect<Effect>(@"effects\grayscale.mgfx");
+            _grayscaleEffect       = MistwarModule.ModuleInstance.ContentsManager.GetEffect<Effect>(@"effects\grayscale.mgfx");
             _grayscaleSpriteBatchParams = new SpriteBatchParameters
             {
                 Effect = _grayscaleEffect
@@ -109,7 +115,10 @@ namespace Nekres.Mistwar.UI.Controls
             }
             _visible = true;
             this.Visible = true;
-            if (silent) return;
+            if (silent) {
+                return;
+            }
+
             GameService.Content.PlaySoundEffectByName("page-open-" + RandomUtil.GetRandom(1, 3));
             GameService.Animation.Tweener.Tween(this, new { Opacity = 1.0f }, 0.35f);
         }
@@ -128,7 +137,10 @@ namespace Nekres.Mistwar.UI.Controls
         private void OnScaleRatioChanged(object o, ValueChangedEventArgs<float> e)
         {
             this.ScaleRatio = MathHelper.Clamp(e.NewValue / 100f, 0, 1);
-            if (!_texture.HasTexture) return;
+            if (!_texture.HasTexture) {
+                return;
+            }
+
             this.Size = Blish_HUD.PointExtensions.ResizeKeepAspect(_texture.Texture.Bounds.Size, (int)(ScaleRatio * GameService.Graphics.SpriteScreen.Width), (int)(ScaleRatio * GameService.Graphics.SpriteScreen.Height));
             this.Location = new Point(this.Parent.Size.X / 2 - this.Size.X / 2, this.Parent.Size.Y / 2 - this.Size.Y / 2);
         }
@@ -137,18 +149,24 @@ namespace Nekres.Mistwar.UI.Controls
         {
             foreach (var bound in _wayPointBounds.ToList())
             {
-                if (!bound.Value.Contains(this.RelativeMousePosition)) continue;
+                if (!bound.Value.Contains(this.RelativeMousePosition)) {
+                    continue;
+                }
+
                 var wp = this.Map.PointsOfInterest.Values.FirstOrDefault(x => x.Id == bound.Key);
-                if (wp == null) break;
+                if (wp == null) {
+                    break;
+                }
+
                 GameService.Content.PlaySoundEffectByName("button-click");
                 if (PInvoke.IsLControlPressed())
                 {
-                    await ChatUtil.Send(wp.ChatLink, MistwarModule.ModuleInstance.ChatMessageKeySetting.Value);
+                    ChatUtil.Send(wp.ChatLink, MistwarModule.ModuleInstance.ChatMessageKeySetting.Value);
                     break;
                 }
                 if (PInvoke.IsLShiftPressed())
                 {
-                    await ChatUtil.Insert(wp.ChatLink, MistwarModule.ModuleInstance.ChatMessageKeySetting.Value);
+                    ChatUtil.Insert(wp.ChatLink, MistwarModule.ModuleInstance.ChatMessageKeySetting.Value);
                     break;
                 }
                 if (await ClipboardUtil.WindowsClipboardService.SetTextAsync(wp.ChatLink))
@@ -165,13 +183,22 @@ namespace Nekres.Mistwar.UI.Controls
             var wps = _wayPointBounds.ToList();
             foreach (var bound in wps)
             {
-                if (!bound.Value.Contains(this.RelativeMousePosition)) continue;
+                if (!bound.Value.Contains(this.RelativeMousePosition)) {
+                    continue;
+                }
+
                 var wp = this.Map.PointsOfInterest.Values.FirstOrDefault(x => x.Id == bound.Key);
-                if (wp == null || wp.Name == null) break;
+                if (wp == null || wp.Name == null) {
+                    break;
+                }
+
                 var wpName = wp.Name;
                 if (wp.Name.StartsWith(" ")) {
                     var obj = this.WvwObjectives.FirstOrDefault(x => x.WayPoints.Any(y => y.Id == wp.Id));
-                    if (obj == null) break;
+                    if (obj == null) {
+                        break;
+                    }
+
                     wpName = MistwarModule.ModuleInstance.WvwService.GetWorldName(obj.Owner) + wpName;
                 }
                 this.BasicTooltipText = wpName;
@@ -198,6 +225,9 @@ namespace Nekres.Mistwar.UI.Controls
 
         private void OnTextureSwapped(object o, ValueChangedEventArgs<Texture2D> e)
         {
+            if (e.NewValue == null) {
+                return;
+            }
             this.SourceRectangle = e.NewValue.Bounds;
             this.Size = Blish_HUD.PointExtensions.ResizeKeepAspect(e.NewValue.Bounds.Size, (int)(ScaleRatio * GameService.Graphics.SpriteScreen.Width), (int)(ScaleRatio * GameService.Graphics.SpriteScreen.Height));
             this.Location = new Point(this.Parent.Size.X / 2 - this.Size.X / 2, this.Parent.Size.Y / 2 - this.Size.Y / 2);
@@ -208,7 +238,9 @@ namespace Nekres.Mistwar.UI.Controls
             if (!GameUtil.IsAvailable() || !GameService.Gw2Mumble.CurrentMap.Type.IsWvWMatch()
                                         || !this.Visible 
                                         || !_texture.HasTexture 
-                                        || WvwObjectives == null) return;
+                                        || WvwObjectives == null) {
+                return;
+            }
 
             spriteBatch.End();
             spriteBatch.Begin(_grayscaleSpriteBatchParams);
@@ -251,7 +283,9 @@ namespace Nekres.Mistwar.UI.Controls
             {
                 if (objectiveEntity.Icon != null) {
 
-                    if (!MistwarModule.ModuleInstance.DrawRuinMapSetting.Value && objectiveEntity.Type == WvwObjectiveType.Ruins) continue;
+                    if (!MistwarModule.ModuleInstance.DrawRuinMapSetting.Value && objectiveEntity.Type == WvwObjectiveType.Ruins) {
+                        continue;
+                    }
 
                     // Calculate draw bounds.
                     var width = (int)(ScaleRatio * objectiveEntity.Icon.Width);
@@ -267,8 +301,14 @@ namespace Nekres.Mistwar.UI.Controls
                 {
                     if (GameUtil.IsEmergencyWayPoint(wp))
                     {
-                        if (!MistwarModule.ModuleInstance.DrawEmergencyWayPointsSetting.Value) continue;
-                        if (objectiveEntity.Owner != MistwarModule.ModuleInstance.WvwService.CurrentTeam) continue; // Skip opposing team's emergency waypoints.
+                        if (!MistwarModule.ModuleInstance.DrawEmergencyWayPointsSetting.Value) {
+                            continue;
+                        }
+
+                        if (objectiveEntity.Owner != MistwarModule.ModuleInstance.WvwService.CurrentTeam) {
+                            continue; // Skip opposing team's emergency waypoints.
+                        }
+
                         if (!objectiveEntity.HasEmergencyWaypoint())
                         {
                             _wayPointBounds.Remove(wp.Id);
@@ -300,7 +340,6 @@ namespace Nekres.Mistwar.UI.Controls
 
             if (this.Map != null)
             {
-
                 // Draw player position indicator (camera transforms are used because avatar transforms are not exposed in competitive modes.)
                 var v = GameService.Gw2Mumble.PlayerCamera.Position * 39.37008f; // world meters to inches.
                 var worldInchesMap = new Vector2(
@@ -321,6 +360,13 @@ namespace Nekres.Mistwar.UI.Controls
                 var size = Content.DefaultFont32.MeasureString(MistwarModule.ModuleInstance.WvwService.LoadingMessage);
                 var dest = new Rectangle((int)(spinnerBnds.X + spinnerBnds.Width / 2 - size.Width / 2), spinnerBnds.Bottom, (int)size.Width, (int)size.Height);
                 spriteBatch.DrawStringOnCtrl(this, MistwarModule.ModuleInstance.WvwService.LoadingMessage, Content.DefaultFont16, dest, Color.White, false, true, 1, HorizontalAlignment.Center);
+            }
+
+            var lastChange = DateTime.UtcNow.Subtract(MistwarModule.ModuleInstance.WvwService.LastChange);
+            if (lastChange.TotalSeconds > 120) {
+                var warnBounds = new Rectangle(bounds.Width - 300, bounds.Height - 32, 300, 32);
+                spriteBatch.DrawOnCtrl(this, _warnTriangle, new Rectangle(warnBounds.Left - 32,  warnBounds.Top, 32,  32));
+                spriteBatch.DrawStringOnCtrl(this, $"Last Change: {lastChange.Hours} hours {lastChange.Minutes} minutes ago", Content.DefaultFont14, warnBounds, Color.White, false, true);
             }
         }
     }
