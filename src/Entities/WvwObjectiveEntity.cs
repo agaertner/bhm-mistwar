@@ -68,61 +68,86 @@ namespace Nekres.Mistwar.Entities
         private static readonly Color ColorNeutral = Color.DimGray;
         public static readonly Color BrightGold = new Color(223, 194, 149, 255);
 
-        private readonly WvwObjective _internalObjective;
-        private readonly ContinentFloorRegionMapSector _internalSector;
-
-        public int MapId { get; }
-
-        public string Id => _internalObjective.Id;
-
-        public string Name => _internalObjective.Name;
-
-        public WvwObjectiveType Type => _internalObjective.Type;
-
         /// <summary>
-        /// Sector bounds this objective belongs to.
+        /// Time since the objective has last been modified.
         /// </summary>
-        public IEnumerable<Point> Bounds { get; }
+        public DateTime LastModified { get; private set; }
 
-        /// <summary>
-        /// Center coordinates of the objective on the world map.
-        /// </summary>
-        public Point Center { get; }
-
-        /// <summary>
-        /// Position of the objective in the game world.
-        /// </summary>
-        public Vector3 WorldPosition { get; }
-
+        private DateTime _lastFlipped = DateTime.MinValue;
         /// <summary>
         /// The timestamp of when the last time a change of ownership has occurred.
         /// </summary>
-        public DateTime LastFlipped { get; set; }
+        public DateTime LastFlipped {
+            get => _lastFlipped;
+            set {
+                if (_lastFlipped != value) {
+                    _lastFlipped = value;
+                    this.LastModified = DateTime.UtcNow;
+                }
+            }
+        }
 
+        private WvwOwner _owner = WvwOwner.Neutral;
         /// <summary>
         /// The objective owner.
         /// </summary>
-        public WvwOwner Owner { get; set; }
+        public WvwOwner Owner {
+            get => _owner;
+            set {
+                if (_owner != value) {
+                    _owner = value;
+                    this.LastModified = DateTime.UtcNow;
+                }
+            }
+        }
+
+        private Guid _claimedBy = Guid.Empty;
+        /// <summary>
+        /// Id of the guild that has claimed the objective.
+        /// </summary>
+        public Guid ClaimedBy { 
+            get => _claimedBy;
+            set {
+                if (_claimedBy != value) {
+                    _claimedBy = value;
+                    this.LastModified = DateTime.UtcNow;
+                }
+            }
+        }
+
+        private int _yaksDelivered;
+        /// <summary>
+        /// Number of Dolyaks delivered to the objective.
+        /// </summary>
+        public int YaksDelivered { 
+            get => _yaksDelivered;
+            set {
+                if (_yaksDelivered != value) {
+                    _yaksDelivered = value;
+                    this.LastModified = DateTime.UtcNow;
+                }
+            }
+        }
+
+        private IReadOnlyList<int> _guildUpgrades;
+        /// <summary>
+        /// List of guild upgrade ids.
+        /// </summary>
+        public IReadOnlyList<int> GuildUpgrades {
+            get => _guildUpgrades;
+            set {
+                // ReSharper disable once PossibleUnintendedReferenceComparison
+                if (_guildUpgrades?.SequenceEqual(value) ?? _guildUpgrades != value) {
+                    _guildUpgrades = value;
+                    this.LastModified = DateTime.UtcNow;
+                }
+            }
+        }
 
         /// <summary>
         /// Color of the objective's owning team.
         /// </summary>
         public Color TeamColor => GetColor();
-
-        /// <summary>
-        /// Id of the guild that has claimed the objective.
-        /// </summary>
-        public Guid ClaimedBy { get; set; }
-
-        /// <summary>
-        /// List of guild upgrade ids.
-        /// </summary>
-        public IReadOnlyList<int> GuildUpgrades { get; set; }
-
-        /// <summary>
-        /// Number of Dolyaks delivered to the objective.
-        /// </summary>
-        public int YaksDelivered { get; set; }
 
         /// <summary>
         /// Icon of the objective's type.
@@ -149,29 +174,51 @@ namespace Nekres.Mistwar.Entities
         /// </summary>
         public Texture2D BuffTexture => TextureBuff;
 
+        /// <summary>
+        /// Sector bounds this objective belongs to.
+        /// </summary>
+        public IEnumerable<Point> Bounds { get; }
+
+        /// <summary>
+        /// Center coordinates of the objective on the world map.
+        /// </summary>
+        public Point Center { get; }
+
+        /// <summary>
+        /// Position of the objective in the game world.
+        /// </summary>
+        public Vector3 WorldPosition { get; }
+
         private float _opacity;
         /// <summary>
         /// Opacity of icon and text when drawn.
         /// </summary>
         public float Opacity => GetOpacity();
 
-        public List<ContinentFloorRegionMapPoi> WayPoints { get; }
+        public           List<ContinentFloorRegionMapPoi> WayPoints { get; }
+        private readonly WvwObjective                     _internalObjective;
+        public           string                           Id   => _internalObjective.Id;
+        public           string                           Name => _internalObjective.Name;
+        public           WvwObjectiveType                 Type => _internalObjective.Type;
+
+        public int MapId { get; }
 
         public WvwObjectiveEntity(WvwObjective objective, ContinentFloorRegionMap map)
         {
             _internalObjective = objective;
-            _internalSector = map.Sectors[objective.SectorId];
-            _opacity = 1f;
-            Icon = GetTexture(objective.Type);
-            MapId = map.Id;
-            Bounds = _internalSector.Bounds.Select(coord => MapUtil.Refit(coord, map.ContinentRect.TopLeft));
-            Center = MapUtil.Refit(_internalSector.Coord, map.ContinentRect.TopLeft);
-            LastFlipped = DateTime.MinValue.ToUniversalTime();
-            BuffDuration = new TimeSpan(0, 5, 0);
+
+            var internalSector = map.Sectors[objective.SectorId];
+
+            _opacity      = 1f;
+            Icon          = GetTexture(objective.Type);
+            MapId         = map.Id;
+            Bounds        = internalSector.Bounds.Select(coord => MapUtil.Refit(coord, map.ContinentRect.TopLeft));
+            Center        = MapUtil.Refit(internalSector.Coord, map.ContinentRect.TopLeft);
+            BuffDuration  = new TimeSpan(0, 5, 0);
             WorldPosition = CalculateWorldPosition(map);
 
             WayPoints = map.PointsOfInterest.Values.Where(x => x.Type == PoiType.Waypoint).Where(y =>
-                PolygonUtil.InBounds(new Vector2((float) y.Coord.X, (float) y.Coord.Y), _internalSector.Bounds.Select(z => new Vector2((float)z.X, (float)z.Y)).ToList())).ToList();
+                PolygonUtil.InBounds(new Vector2((float) y.Coord.X, (float) y.Coord.Y), internalSector.Bounds.Select(z => new Vector2((float)z.X, (float)z.Y)).ToList())).ToList();
 
             foreach (var wp in WayPoints)
             {

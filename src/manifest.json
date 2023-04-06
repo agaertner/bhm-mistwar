@@ -1,17 +1,18 @@
 {
   "name": "Mistwar",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "namespace": "Nekres.Mistwar",
   "package": "Mistwar.dll",
   "manifest_version": 1,
-
   "description": "A tactical map and head-up display for World VS. World to track objectives, their timers and territory control.",
   "dependencies": {
     "bh.blishhud": ">=1.0.0"
   },
   "url": "https://github.com/agaertner/bhm-mistwar",
   "enabled_without_gw2": false,
-  "directories": [ "mistwar" ],
+  "directories": [
+    "mistwar"
+  ],
   "contributors": [
     {
       "name": "Nekres",

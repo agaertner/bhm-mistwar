@@ -43,6 +43,8 @@ namespace Nekres.Mistwar.Services {
             _prevApiRequestTime = DateTime.MinValue.ToUniversalTime();
             _api = api;
             _wvwObjectiveCache = new AsyncCache<int, List<WvwObjectiveEntity>>(RequestObjectives);
+
+            this.LastChange = DateTime.MinValue.ToUniversalTime();
         }
 
         public async Task LoadAsync() {
@@ -73,6 +75,12 @@ namespace Nekres.Mistwar.Services {
                 t.Start();
             }
             Task.WaitAll(taskList.ToArray());
+
+            var mins = Math.Round(this.LastChange.Subtract(DateTime.UtcNow).TotalMinutes);
+            if (mins > 0 && mins % 2 == 0) {
+                ScreenNotification.ShowNotification($"({MistwarModule.ModuleInstance.Name}) No changes in the last {mins} minutes.", ScreenNotification.NotificationType.Warning);
+            }
+
             LoadingMessage = string.Empty;
         }
 
@@ -145,8 +153,6 @@ namespace Nekres.Mistwar.Services {
                 return;
             }
 
-            this.LastChange = match.HttpResponseInfo?.Date.UtcDateTime ?? DateTime.UtcNow;
-
             _teams = match.AllWorlds;
             this.CurrentTeam =
                 _teams.Blue.Contains(worldId) ? WvwOwner.Blue :
@@ -171,6 +177,10 @@ namespace Nekres.Mistwar.Services {
                 objEntity.ClaimedBy = obj.ClaimedBy ?? Guid.Empty;
                 objEntity.GuildUpgrades = obj.GuildUpgrades;
                 objEntity.YaksDelivered = obj.YaksDelivered ?? 0;
+
+                if (objEntity.LastModified > this.LastChange) {
+                    this.LastChange = objEntity.LastModified;
+                }
             }
         }
 
