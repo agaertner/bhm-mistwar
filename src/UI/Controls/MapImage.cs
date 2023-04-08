@@ -98,29 +98,24 @@ namespace Nekres.Mistwar.UI.Controls
             MistwarModule.ModuleInstance.ScaleRatioSetting.SettingChanged += OnScaleRatioChanged;
         }
 
-        public void Toggle(bool forceHide = false, bool silent = false, float tDuration = 0.1f)
-        {
-            silent = silent || !GameService.Gw2Mumble.CurrentMap.Type.IsWvWMatch();
-            if (forceHide || !GameUtil.IsAvailable() || !GameService.Gw2Mumble.CurrentMap.Type.IsWvWMatch() || _visible)
-            {
-                _visible = false;
-                if (silent)
-                {
-                    this.Visible = false;
-                    return;
+        public void Toggle(bool forceHide = false, bool silent = false, float tDuration = 0.1f) {
+            bool isWvWMatch = GameService.Gw2Mumble.CurrentMap.Type.IsWvWMatch();
+            if (!forceHide && GameUtil.IsAvailable() && isWvWMatch && !_visible) {
+                _visible     = true;
+                this.Visible = true;
+                if (!silent) {
+                    GameService.Content.PlaySoundEffectByName("page-open-" + RandomUtil.GetRandom(1, 3));
+                    GameService.Animation.Tweener.Tween(this, new { Opacity = 1.0f }, 0.35f);
                 }
-                GameService.Content.PlaySoundEffectByName("window-close");
-                GameService.Animation.Tweener.Tween(this, new { Opacity = 0.0f }, tDuration).OnComplete(this.Hide);
-                return;
+            } else if (_visible) {
+                _visible = false;
+                if (!silent) {
+                    GameService.Content.PlaySoundEffectByName("window-close");
+                    GameService.Animation.Tweener.Tween(this, new { Opacity = 0.0f }, tDuration).OnComplete(this.Hide);
+                } else {
+                    this.Visible = false;
+                }
             }
-            _visible = true;
-            this.Visible = true;
-            if (silent) {
-                return;
-            }
-
-            GameService.Content.PlaySoundEffectByName("page-open-" + RandomUtil.GetRandom(1, 3));
-            GameService.Animation.Tweener.Tween(this, new { Opacity = 1.0f }, 0.35f);
         }
 
         internal void SetOpacity(float opacity)

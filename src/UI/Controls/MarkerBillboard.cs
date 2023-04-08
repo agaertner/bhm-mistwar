@@ -5,8 +5,6 @@ using Gw2Sharp.WebApi.V2.Models;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Nekres.Mistwar.Entities;
-using Nekres.Mistwar.Services;
-using SharpDX.MediaFoundation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -90,7 +88,7 @@ namespace Nekres.Mistwar.UI.Controls {
                     }
 
                     // Stick to bottom
-                    dest.Y = bottom;  //MathUtil.RoundToClosest(dest.Y, top,  bottom);
+                    dest.Y = bottom; //MathUtil.RoundToClosest(dest.Y, top,  bottom);
                 }
 
                 // Duplicate check because camera FoV does not correspond to SpriteScreen size.
@@ -102,16 +100,16 @@ namespace Nekres.Mistwar.UI.Controls {
                 }
 
                 // Calculate distance and scale based on distance.
-                var maxScale = MistwarModule.ModuleInstance.MarkerScaleSetting.Value / 100;
+                var minScale = 0.2f;
+                var maxScale = MathUtil.Clamp(MistwarModule.ModuleInstance.MarkerScaleSetting.Value / 100, minScale, 1f);
                 var scale    = maxScale;
                 var distance = objectiveEntity.GetDistance();
-                if (!MistwarModule.ModuleInstance.MarkerFixedSizeSetting.Value && distance > 400) {
-                    var minScale  = 0.35f;
+                if (!MistwarModule.ModuleInstance.MarkerFixedSizeSetting.Value && distance > 400) 
+                {
                     var distScale = (float)Math.Sqrt(Math.Abs(1 - distance / 1500));
-                    scale = maxScale < minScale ? distScale : MathUtil.Clamp(distScale, minScale, maxScale);
+                    scale = MathUtil.Clamp(distScale, minScale, maxScale);
                 }
-                
-                //TODO: Fix blackness at spawn area when fixed scale is off.
+
                 // Draw the objective.
                 spriteBatch.DrawWvwObjectiveOnCtrl(this, objectiveEntity, dest, objectiveEntity.Opacity, scale, true, MistwarModule.ModuleInstance.DrawDistanceSetting.Value);
             }

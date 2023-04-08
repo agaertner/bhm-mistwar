@@ -98,17 +98,20 @@ namespace Nekres.Mistwar.Services {
             this.IsLoading = false;
         }
 
-        private async Task DownloadMapImage(int id)
-        {
-            if (!_mapCache.TryGetValue(id, out var cacheTex))
-            {
-                cacheTex = new AsyncTexture2D();
-                _mapCache.Add(id, cacheTex);
+        private async Task DownloadMapImage(int id) {
+
+            AsyncTexture2D tex;
+
+            lock (_mapCache) {
+                if (!_mapCache.TryGetValue(id, out tex)) {
+                    tex = new AsyncTexture2D();
+                    _mapCache.Add(id, tex);
+                }
             }
 
             var filePath = Path.Combine(_dir.GetFullDirectoryPath("mistwar"), $"{id}.png");
 
-            this.IsReady = LoadFromCache(filePath, cacheTex);
+            this.IsReady = LoadFromCache(filePath, tex);
             if (this.IsReady) {
                 await ReloadMap();
                 return;
@@ -122,7 +125,7 @@ namespace Nekres.Mistwar.Services {
 
             await MapUtil.BuildMap(map, filePath, true, _loadingIndicator);
 
-            this.IsReady = LoadFromCache(filePath, cacheTex);
+            this.IsReady = LoadFromCache(filePath, tex);
             if (this.IsReady) {
                 await ReloadMap();
             }
@@ -153,8 +156,13 @@ namespace Nekres.Mistwar.Services {
                 return;
             }
 
-            if (!_mapCache.TryGetValue(GameService.Gw2Mumble.CurrentMap.Id, out var tex) || tex == null) {
-                return;
+            AsyncTexture2D tex;
+
+            lock(_mapCache)
+            {
+                if (!_mapCache.TryGetValue(GameService.Gw2Mumble.CurrentMap.Id, out tex) || tex == null) {
+                    return;
+                }
             }
 
             _mapControl.Texture.SwapTexture(tex);
@@ -178,7 +186,7 @@ namespace Nekres.Mistwar.Services {
 
         public void Toggle(bool forceHide = false, bool silent = false)
         {
-            if (IsLoading)
+            if (!this.IsReady)
             {
                 ScreenNotification.ShowNotification($"({MistwarModule.ModuleInstance.Name}) Map images are being prepared...", ScreenNotification.NotificationType.Error);
                 return;

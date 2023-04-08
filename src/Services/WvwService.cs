@@ -10,7 +10,7 @@ using System.Linq;
 using System.Threading.Tasks;
 
 namespace Nekres.Mistwar.Services {
-    internal class WvwService
+    internal class WvwService : IDisposable
     {
         public Guid     CurrentGuild   { get; private set; }
         public WvwOwner CurrentTeam    { get; private set; }
@@ -202,5 +202,10 @@ namespace Nekres.Mistwar.Services {
             }
             return newObjectives;
         }
+
+        public void Dispose() {
+            _wvwObjectiveCache?.Clear();
+        }
+
     }
 }

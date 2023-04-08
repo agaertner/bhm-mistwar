@@ -310,10 +310,13 @@ namespace Nekres.Mistwar {
             GameService.GameIntegration.Gw2Instance.IsInGameChanged -= OnIsInGameChanged;
             GameService.Gw2Mumble.CurrentMap.MapChanged -= OnMapChanged;
             GameService.Gw2Mumble.UI.IsMapOpenChanged -= OnIsMapOpenChanged;
-            MarkerService?.Dispose();
+
             _mapService?.Dispose();
             _moduleIcon?.Dispose();
             _cornerTex?.Dispose();
+
+            MarkerService?.Dispose();
+            WvwService?.Dispose();
 
             // All static members must be manually unset
             ModuleInstance = null;
