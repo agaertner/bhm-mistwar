@@ -1,6 +1,8 @@
 ﻿using Blish_HUD;
 using Blish_HUD.Content;
 using Blish_HUD.Controls;
+using Blish_HUD.Extended;
+using Blish_HUD.Extended.Core.Views;
 using Blish_HUD.Graphics.UI;
 using Blish_HUD.Input;
 using Blish_HUD.Modules;
@@ -11,14 +13,10 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Nekres.Mistwar.Services;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Threading.Tasks;
-using Blish_HUD.Extended;
-using Blish_HUD.Extended.Core.Views;
 
-namespace Nekres.Mistwar
-{
+namespace Nekres.Mistwar {
     [Export(typeof(Module))]
     public class MistwarModule : Module
     {
@@ -55,14 +53,16 @@ namespace Nekres.Mistwar
         internal SettingEntry<bool> DrawRuinMapSetting;
 
         // Marker settings
-        internal SettingEntry<bool> EnableMarkersSetting;
-        internal SettingEntry<bool> HideInCombatSetting;
-        internal SettingEntry<bool> HideAlliedMarkersSetting;
-        internal SettingEntry<bool> DrawRuinMarkersSetting;
-        internal SettingEntry<bool> DrawEmergencyWayPointsSetting;
-        internal SettingEntry<bool> DrawDistanceSetting;
+        internal SettingEntry<bool>  EnableMarkersSetting;
+        internal SettingEntry<bool>  HideInCombatSetting;
+        internal SettingEntry<bool>  HideAlliedMarkersSetting;
+        internal SettingEntry<bool>  DrawRuinMarkersSetting;
+        internal SettingEntry<bool>  DrawEmergencyWayPointsSetting;
+        internal SettingEntry<bool>  DrawDistanceSetting;
         internal SettingEntry<float> MaxViewDistanceSetting;
         internal SettingEntry<float> MarkerScaleSetting;
+        internal SettingEntry<bool>  MarkerFixedSizeSetting;
+        internal SettingEntry<bool>  MarkerStickySetting;
 
         protected override void DefineSettings(SettingCollection settings)
         {
@@ -131,8 +131,14 @@ namespace Nekres.Mistwar
                 () => "Max View Distance", 
                 () => "The max view distance at which an objective marker can be seen.");
             MarkerScaleSetting = markerSettings.DefineSetting("ScaleRatio", 70f, 
-                () => "Scale Ratio", 
-                () => "Changes the size of the markers.");
+                () => "Marker Size",
+                () => "Changes the maximum size of the markers.");
+            MarkerFixedSizeSetting = markerSettings.DefineSetting("FixedSize", false,
+                                                                  () => "Fixed Size",
+                                                                  () => "Disables the distance-based down-scaling of objective markers.");
+            MarkerStickySetting = markerSettings.DefineSetting("Sticky", true,
+                                                                  () => "Sticky",
+                                                                  () => "Objectives which are out of view will have their marker stick to the edge of your screen if enabled.");
         }
 
         private AsyncTexture2D _cornerTex;
@@ -162,12 +168,10 @@ namespace Nekres.Mistwar
         protected override async Task LoadAsync()
         {
             await this.WvwService.LoadAsync();
-            _mapService.DownloadMaps(await WvwService.GetWvWMapIds(await WvwService.GetWorldId()));
         }
 
         protected override void OnModuleLoaded(EventArgs e)
         {
-            Gw2ApiManager.SubtokenUpdated                           += OnSubtokenUpdated;
             ColorIntensitySetting.SettingChanged                    += OnColorIntensitySettingChanged;
             ToggleMapKeySetting.Value.Activated                     += OnToggleKeyActivated;
             ToggleMarkersKeySetting.Value.Activated                 += OnToggleMarkersKeyActivated;
@@ -210,15 +214,6 @@ namespace Nekres.Mistwar
             return new Progress<string>(UpdateModuleLoading);
         }
 
-        private async void OnSubtokenUpdated(object o, ValueEventArgs<IEnumerable<TokenPermission>> e)
-        {
-            if (!Gw2ApiManager.HasPermission(TokenPermission.Account)) {
-                return;
-            }
-
-            _mapService.DownloadMaps(await WvwService.GetWvWMapIds(await WvwService.GetWorldId()));
-        }
-
         private void OnOpacitySettingChanged(object o, ValueChangedEventArgs<float> e)
         {
             _mapService.Opacity = MathHelper.Clamp(e.NewValue / 100f, 0, 1);
@@ -237,10 +232,12 @@ namespace Nekres.Mistwar
 
         protected override async void Update(GameTime gameTime)
         {
+            _mapService.DownloadMaps(WvwService.GetWvWMapIds());
+
             if (!Gw2ApiManager.HasPermission(TokenPermission.Account)) {
                 return;
             }
-
+            
             await WvwService.Update();
         }
 
@@ -303,7 +300,6 @@ namespace Nekres.Mistwar
         /// <inheritdoc />
         protected override void Unload()
         {
-            Gw2ApiManager.SubtokenUpdated -= OnSubtokenUpdated;
             ColorIntensitySetting.SettingChanged -= OnColorIntensitySettingChanged;
             ToggleMapKeySetting.Value.Activated -= OnToggleKeyActivated;
             ToggleMarkersKeySetting.Value.Activated -= OnToggleMarkersKeyActivated;
@@ -318,6 +314,7 @@ namespace Nekres.Mistwar
             _mapService?.Dispose();
             _moduleIcon?.Dispose();
             _cornerTex?.Dispose();
+
             // All static members must be manually unset
             ModuleInstance = null;
         }

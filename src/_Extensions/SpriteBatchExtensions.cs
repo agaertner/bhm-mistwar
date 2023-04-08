@@ -16,7 +16,7 @@ namespace Nekres.Mistwar
         {
 			if (objectiveEntity.Icon == null) return;
 
-            var font = scale < 0.25 ? GameService.Content.DefaultFont12 : 
+            var font = scale < 0.25f ? GameService.Content.DefaultFont12 : 
                        scale < 0.5f ? GameService.Content.DefaultFont14 :
                        scale < 0.75f ? GameService.Content.DefaultFont16 : GameService.Content.DefaultFont18;
 
@@ -63,8 +63,10 @@ namespace Nekres.Mistwar
 			// draw type icon
 			spriteBatch.DrawOnCtrl(control, objectiveEntity.Icon, new Rectangle(dest.X - (int)(scale * dest.Width) / 2, dest.Y - (int)(scale * dest.Height) / 2, (int)(scale * dest.Width), (int)(scale * dest.Height)), objectiveEntity.Icon.Bounds, teamColor);
 
-			// draw remaining duration of the protection buff
-			if (objectiveEntity.HasBuff(out var remainingTime))
+            var doStroke = opacity > 0.99f;
+
+            // draw remaining duration of the protection buff
+            if (objectiveEntity.HasBuff(out var remainingTime))
 			{
 				var text = remainingTime.ToString(@"m\:ss");
 				var size = font.MeasureString(text);
@@ -72,7 +74,7 @@ namespace Nekres.Mistwar
                 var iconBnds = new Rectangle(dest.X - 20, (int)(dest.Y - scale * 80), texSize.X, texSize.Y);
                 var textBnds = new Rectangle(iconBnds.Right + 3, iconBnds.Y, iconBnds.Width, iconBnds.Height);
                 spriteBatch.DrawOnCtrl(control, objectiveEntity.BuffTexture, iconBnds, objectiveEntity.BuffTexture.Bounds, whiteColor);
-                spriteBatch.DrawStringOnCtrl(control, text, font, textBnds, textColor, false, opacity >= 0.99f);
+                spriteBatch.DrawStringOnCtrl(control, text, font, textBnds, textColor, false, doStroke);
             }
 
             // draw claimed indicator
@@ -91,7 +93,7 @@ namespace Nekres.Mistwar
 			if (drawName)
             {
                 var nameSize = font.MeasureString(objectiveEntity.Name);
-                spriteBatch.DrawStringOnCtrl(control, objectiveEntity.Name, font, new Rectangle(dest.X - (int)nameSize.Width / 2, dest.Y + dest.Height / 2 + (int)(scale * 12), (int)nameSize.Width, (int)nameSize.Height), textColor, false, opacity >= 0.99f);
+                spriteBatch.DrawStringOnCtrl(control, objectiveEntity.Name, font, new Rectangle(dest.X - (int)nameSize.Width / 2, dest.Y + dest.Height / 2 + (int)(scale * 12), (int)nameSize.Width, (int)nameSize.Height), textColor, false, doStroke);
             }
 
             if (!drawDistance) return;
@@ -100,7 +102,7 @@ namespace Nekres.Mistwar
             {
                 var text = distance >= 1000 ? $"{distance / 1000:N2}km" : $"{distance:N0}m";
                 var size = font.MeasureString(text);
-                spriteBatch.DrawStringOnCtrl(control, text, font, new Rectangle(dest.X - (int)size.Width / 2, dest.Y - (int)size.Height - dest.Height / 2 - (int)(scale * 80), dest.Width, dest.Height), textColor, false, opacity >= 0.99f);
+                spriteBatch.DrawStringOnCtrl(control, text, font, new Rectangle(dest.X - (int)size.Width / 2, dest.Y - (int)size.Height - dest.Height / 2 - (int)(scale * 80), dest.Width, dest.Height), textColor, false, doStroke);
             }
 		}
     }

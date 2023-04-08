@@ -17,11 +17,6 @@ using File = System.IO.File;
 namespace Nekres.Mistwar.Services {
     internal class MapService : IDisposable
     {
-        private DirectoriesManager _dir;
-        private WvwService _wvw;
-
-        private MapImage _mapControl;
-
         private float _opacity;
         public float Opacity
         {
@@ -45,12 +40,14 @@ namespace Nekres.Mistwar.Services {
         }
 
         public bool IsVisible => _mapControl?.Visible ?? false;
-
-        private readonly IProgress<string> _loadingIndicator;
-
         public bool IsLoading { get; private set; }
+        public bool IsReady   { get; private set; }
 
-        private Dictionary<int, AsyncTexture2D> _mapCache;
+        private readonly IProgress<string>               _loadingIndicator;
+        private          Dictionary<int, AsyncTexture2D> _mapCache;
+        private          DirectoriesManager              _dir;
+        private          WvwService                      _wvw;
+        private          MapImage                        _mapControl;
 
         public MapService(DirectoriesManager dir, WvwService wvw, IProgress<string> loadingIndicator)
         {
@@ -72,7 +69,7 @@ namespace Nekres.Mistwar.Services {
 
         public void DownloadMaps(int[] mapIds)
         {
-            if (mapIds.IsNullOrEmpty()) {
+            if (this.IsReady || this.IsLoading || mapIds.IsNullOrEmpty()) {
                 return;
             }
 
@@ -87,6 +84,7 @@ namespace Nekres.Mistwar.Services {
         private void LoadMapsInBackground(int[] mapIds)
         {
             this.IsLoading = true;
+
             foreach (var id in mapIds)
             {
                 var t = DownloadMapImage(id);
@@ -95,8 +93,9 @@ namespace Nekres.Mistwar.Services {
                 // Considering tile download on slow connections and tile structuring on low-end hardware in addition to loosing indicator info depth a
                 // refactor of the code to support it would not yield much value.
             }
-            this.IsLoading = false;
             _loadingIndicator.Report(null);
+
+            this.IsLoading = false;
         }
 
         private async Task DownloadMapImage(int id)
@@ -107,10 +106,10 @@ namespace Nekres.Mistwar.Services {
                 _mapCache.Add(id, cacheTex);
             }
 
-            var filePath = $"{_dir.GetFullDirectoryPath("mistwar")}/{id}.png";
+            var filePath = Path.Combine(_dir.GetFullDirectoryPath("mistwar"), $"{id}.png");
 
-            if (LoadFromCache(filePath, cacheTex))
-            {
+            this.IsReady = LoadFromCache(filePath, cacheTex);
+            if (this.IsReady) {
                 await ReloadMap();
                 return;
             }
@@ -123,7 +122,8 @@ namespace Nekres.Mistwar.Services {
 
             await MapUtil.BuildMap(map, filePath, true, _loadingIndicator);
 
-            if (LoadFromCache(filePath, cacheTex)) {
+            this.IsReady = LoadFromCache(filePath, cacheTex);
+            if (this.IsReady) {
                 await ReloadMap();
             }
         }

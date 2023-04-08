@@ -82,5 +82,10 @@ namespace Nekres.Mistwar
         {
             return a.X * b.Y - a.Y * b.X;
         }
+
+        public static int RoundToClosest(int value, int a, int b) {
+            return Math.Abs(value - a) < Math.Abs(value - b) ? a : b;
+        }
+
     }
 }
