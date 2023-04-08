@@ -174,7 +174,6 @@
     <Compile Include="Entities\WvwObjectiveEntity.cs" />
     <Compile Include="_Extensions\SpriteBatchExtensions.cs" />
     <Compile Include="_Extensions\VectorExtensions.cs" />
-    <Compile Include="_Utils\CommonStrings.cs" />
     <Compile Include="_Utils\etc\PInvoke.cs" />
     <Compile Include="_Utils\PolygonUtil.cs" />
     <Compile Include="_Utils\GameUtil.cs" />

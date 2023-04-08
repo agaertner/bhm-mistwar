@@ -10,8 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Rectangle = Microsoft.Xna.Framework.Rectangle;
 
-namespace Nekres.Mistwar.UI.Controls
-{
+namespace Nekres.Mistwar.UI.Controls {
     internal class MarkerBillboard : Control
     {
         public IEnumerable<WvwObjectiveEntity> WvwObjectives;
@@ -49,9 +48,17 @@ namespace Nekres.Mistwar.UI.Controls
 
             // Order by distance.
             var distanceSort = objectives.OrderByDescending(x => x.GetDistance()).ToList(); // Draw further markers first so that closer ones are drawn ontop.
-            if (MistwarModule.ModuleInstance.HideInCombatSetting.Value && GameService.Gw2Mumble.PlayerCharacter.IsInCombat)
-            {
-                distanceSort = distanceSort.IsNullOrEmpty() ? distanceSort : distanceSort.Take(1).ToList(); // Show only the closest objective during combat.
+
+            // Draw only closest marker when in combat
+            if (MistwarModule.ModuleInstance.HideInCombatSetting.Value && GameService.Gw2Mumble.PlayerCharacter.IsInCombat) {
+
+                var closest = distanceSort.LastOrDefault();
+
+                if (closest == null) {
+                    return; // Nothing to draw while in combat.
+                }
+
+                distanceSort = new List<WvwObjectiveEntity> { closest };
             }
 
             foreach (var objectiveEntity in distanceSort)
@@ -63,25 +70,56 @@ namespace Nekres.Mistwar.UI.Controls
                 var dir = GameService.Gw2Mumble.PlayerCamera.Position - objectiveEntity.WorldPosition;
                 var angle = MathUtil.RadToDeg * GameService.Gw2Mumble.PlayerCamera.Forward.Angle(dir);
 
-                if (Math.Abs(angle) < 90) // Objective is behind player.
-                {
-                    continue;
-                }
-
                 // Project onto screen space.
                 var trs = Matrix.CreateScale(1) * Matrix.CreateTranslation(objectiveEntity.WorldPosition);
                 var transformed = Vector3.Transform(trs.Translation, GameService.Gw2Mumble.PlayerCamera.WorldViewProjection).Flatten();
 
                 // Calculate draw bounds.
-                var width = objectiveEntity.Icon.Width;
+                var width  = objectiveEntity.Icon.Width;
                 var height = objectiveEntity.Icon.Height;
-                var dest = new Rectangle((int)transformed.X, (int)transformed.Y, width, height);
+                var dest   = new Rectangle((int)transformed.X, (int)transformed.Y, width, height);
+
+                // Calculate screen bounds.
+                var screenBounds = new Rectangle(0, 0, bounds.Width, bounds.Height);
+
+                // Clamp to screen bounds.
+                var left  = screenBounds.Left  + dest.Width / 2;
+                var right = screenBounds.Right - dest.Width;
+                var top      = screenBounds.Top + dest.Height / 2;
+                var bottom   = screenBounds.Bottom - dest.Height;
+
+                if (Math.Abs(angle) < 90) // Objective is behind player.
+                {
+                    if (!MistwarModule.ModuleInstance.MarkerStickySetting.Value)
+                    {
+                        continue;
+                    }
+
+                    // Stick to bottom
+                    dest.Y = bottom; //MathUtil.RoundToClosest(dest.Y, top,  bottom);
+                }
+
+                // Duplicate check because camera FoV does not correspond to SpriteScreen size.
+                // Ie. Out of screen bounds does not equal behind player.
+                if (MistwarModule.ModuleInstance.MarkerStickySetting.Value) 
+                {
+                    dest.X = (int)MathUtil.Clamp(dest.X, left, right);
+                    dest.Y = (int)MathUtil.Clamp(dest.Y, top,  bottom);
+                }
+
+                // Calculate distance and scale based on distance.
+                var minScale = 0.2f;
+                var maxScale = MathUtil.Clamp(MistwarModule.ModuleInstance.MarkerScaleSetting.Value / 100, minScale, 1f);
+                var scale    = maxScale;
+                var distance = objectiveEntity.GetDistance();
+                if (!MistwarModule.ModuleInstance.MarkerFixedSizeSetting.Value && distance > 400) 
+                {
+                    var distScale = (float)Math.Sqrt(Math.Abs(1 - distance / 1500));
+                    scale = MathUtil.Clamp(distScale, minScale, maxScale);
+                }
 
                 // Draw the objective.
-                spriteBatch.DrawWvwObjectiveOnCtrl(this, objectiveEntity, dest, objectiveEntity.Opacity, 
-                    MathUtil.Clamp(MistwarModule.ModuleInstance.MarkerScaleSetting.Value / 100f, 0f, 1f), 
-                    true, 
-                    MistwarModule.ModuleInstance.DrawDistanceSetting.Value);
+                spriteBatch.DrawWvwObjectiveOnCtrl(this, objectiveEntity, dest, objectiveEntity.Opacity, scale, true, MistwarModule.ModuleInstance.DrawDistanceSetting.Value);
             }
         }
 

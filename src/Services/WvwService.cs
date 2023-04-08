@@ -1,4 +1,5 @@
 ﻿using Blish_HUD;
+using Blish_HUD.Controls;
 using Blish_HUD.Extended;
 using Blish_HUD.Modules.Managers;
 using Gw2Sharp.WebApi.V2.Models;
@@ -7,19 +8,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Blish_HUD.Controls;
 
 namespace Nekres.Mistwar.Services {
-    internal class WvwService
+    internal class WvwService : IDisposable
     {
-        public Guid CurrentGuild { get; private set; }
-        public WvwOwner CurrentTeam { get; private set; }
-
-        public DateTime LastChange { get; private set; }
-
-        public bool     IsLoading  => !string.IsNullOrEmpty(LoadingMessage);
-
-        public string LoadingMessage { get; private set; }
+        public Guid     CurrentGuild   { get; private set; }
+        public WvwOwner CurrentTeam    { get; private set; }
+        public DateTime LastChange     { get; private set; }
+        public string   LoadingMessage { get; private set; }
+        public bool     IsLoading      => !string.IsNullOrEmpty(LoadingMessage);
 
         private Gw2ApiManager _api;
 
@@ -59,23 +56,26 @@ namespace Nekres.Mistwar.Services {
             _prevApiRequestTime = DateTime.UtcNow;
 
             this.LoadingMessage = "Refreshing";
+
             this.CurrentGuild   = await GetRepresentedGuild();
+
             var worldId = await GetWorldId();
-            if (worldId < 0)
+            if (worldId >= 0)
             {
-                LoadingMessage = string.Empty;
-                return;
+                var mapIds = GetWvWMapIds();
+                var taskList = new List<Task>();
+                foreach (var id in mapIds) {
+                    var t = new Task<Task>(() => UpdateObjectives(worldId, id));
+                    taskList.Add(t);
+                    t.Start();
+                }
+
+                if (taskList.Any()) {
+                    await Task.WhenAll(taskList.ToArray());
+                }
             }
 
-            var taskList = new List<Task>();
-            var mapIds   = await GetWvWMapIds(worldId);
-            foreach (var id in mapIds) {
-                var t = new Task<Task>(() => UpdateObjectives(worldId, id));
-                taskList.Add(t);
-                t.Start();
-            }
-            Task.WaitAll(taskList.ToArray());
-
+            // Warn if no change for more than a minute, every 2 minutes.
             var mins = Math.Round(this.LastChange.Subtract(DateTime.UtcNow).TotalMinutes);
             if (mins > 0 && mins % 2 == 0) {
                 ScreenNotification.ShowNotification($"({MistwarModule.ModuleInstance.Name}) No changes in the last {mins} minutes.", ScreenNotification.NotificationType.Warning);
@@ -90,12 +90,8 @@ namespace Nekres.Mistwar.Services {
                 return Guid.Empty;
             }
 
-            var character = await TaskUtil.RetryAsync(() => _api.Gw2ApiClient.V2.Characters[GameService.Gw2Mumble.PlayerCharacter.Name].GetAsync());
-
-            if (character == null) {
-                return Guid.Empty;
-            }
-            return character.Guild ?? Guid.Empty;
+            var character = await TaskUtil.TryAsync(() => _api.Gw2ApiClient.V2.Characters[GameService.Gw2Mumble.PlayerCharacter.Name].GetAsync());
+            return character?.Guild ?? Guid.Empty;
         }
 
         public string GetWorldName(WvwOwner owner)
@@ -114,7 +110,7 @@ namespace Nekres.Mistwar.Services {
                     break;
                 default: return string.Empty;
             }
-            return _worlds.OrderBy(x => x.Population.Value).Reverse().FirstOrDefault(y => team.Contains(y.Id))?.Name ?? string.Empty;
+            return _worlds.OrderByDescending(x => x.Population.Value).FirstOrDefault(y => team.Contains(y.Id))?.Name ?? string.Empty;
         }
 
         public async Task<int> GetWorldId()
@@ -123,19 +119,15 @@ namespace Nekres.Mistwar.Services {
                 return -1;
             }
 
-            var account = await TaskUtil.RetryAsync(() => _api.Gw2ApiClient.V2.Account.GetAsync());
+            var account = await TaskUtil.TryAsync(() => _api.Gw2ApiClient.V2.Account.GetAsync());
             return account?.World ?? -1;
         }
 
-        public async Task<int[]> GetWvWMapIds(int worldId)
+        public int[] GetWvWMapIds()
         {
-            var matches = await TaskUtil.RetryAsync(() => _api.Gw2ApiClient.V2.Wvw.Matches.World(worldId).GetAsync());
-
-            if (matches == null) {
-                return null;
-            }
-
-            return matches.Maps.Select(m => m.Id).ToArray();
+            /*var matches = await TaskUtil.RetryAsync(() => _api.Gw2ApiClient.V2.Wvw.Matches.World(worldId).GetAsync());
+            return matches?.Maps.Select(m => m.Id).ToArray() ?? Array.Empty<int>();*/
+            return Enum.GetValues(typeof(WvwMap)).Cast<int>().ToArray(); // Saving us a request.
         }
 
         public async Task<List<WvwObjectiveEntity>> GetObjectives(int mapId)
@@ -147,13 +139,14 @@ namespace Nekres.Mistwar.Services {
         {
             var objEntities = await GetObjectives(mapId);
 
-            var match = await TaskUtil.RetryAsync(() => _api.Gw2ApiClient.V2.Wvw.Matches.World(worldId).GetAsync());
+            var match = await TaskUtil.TryAsync(() => _api.Gw2ApiClient.V2.Wvw.Matches.World(worldId).GetAsync());
             
             if (match == null) {
                 return;
             }
 
             _teams = match.AllWorlds;
+            // Fetch the users team
             this.CurrentTeam =
                 _teams.Blue.Contains(worldId) ? WvwOwner.Blue :
                 _teams.Red.Contains(worldId) ? WvwOwner.Red :
@@ -166,8 +159,7 @@ namespace Nekres.Mistwar.Services {
 
             foreach (var objEntity in objEntities)
             {
-                var obj = objectives?.FirstOrDefault(v =>
-                    v.Id.Equals(objEntity.Id, StringComparison.InvariantCultureIgnoreCase));
+                var obj = objectives?.FirstOrDefault(v => v.Id.Equals(objEntity.Id, StringComparison.InvariantCultureIgnoreCase));
                 if (obj == null) {
                     continue;
                 }
@@ -210,5 +202,10 @@ namespace Nekres.Mistwar.Services {
             }
             return newObjectives;
         }
+
+        public void Dispose() {
+            _wvwObjectiveCache?.Clear();
+        }
+
     }
 }

@@ -1,9 +1,10 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Nekres.Mistwar
-{
+namespace Nekres.Mistwar {
     public class AsyncCache<TKey, TValue>
     {
         private readonly Func<TKey, Task<TValue>> _valueFactory;
@@ -35,6 +36,26 @@ namespace Nekres.Mistwar
         }
 
         public async Task<TValue> RemoveItem(TKey key) => _completionSourceCache.TryRemove(key, out TaskCompletionSource<TValue> item) ? await item.Task : default;
+
+        public async Task Clear() {
+            foreach (var key in _completionSourceCache.Keys) {
+                var item = await this.RemoveItem(key);
+
+                if (item == null) {
+                    continue;
+                }
+
+                if (item is IDisposable disposable) {
+                    disposable.Dispose();
+                } else if (item is IEnumerable enumerable) {
+                    foreach (var obj in enumerable) {
+                        if (obj is IDisposable disposableObj) {
+                            disposableObj.Dispose();
+                        }
+                    }
+                }
+            }
+        }
 
         public bool ContainsKey(TKey key) => _completionSourceCache.ContainsKey(key);
     }
