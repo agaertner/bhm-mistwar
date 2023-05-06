@@ -39,7 +39,8 @@ namespace Nekres.Mistwar.Services {
             }
         }
 
-        public bool IsVisible => _mapControl?.Visible ?? false;
+        public bool IsVisible;
+
         public bool IsLoading { get; private set; }
         public bool IsReady   { get; private set; }
 
@@ -85,9 +86,19 @@ namespace Nekres.Mistwar.Services {
             };
 
             _window.ContentResized                                  += OnWindowResized;
+            _window.Shown                                           += OnShown;
+            _window.Hidden                                          += OnHidden;
             GameService.Gw2Mumble.CurrentMap.MapChanged             += OnMapChanged;
             GameService.Gw2Mumble.UI.IsMapOpenChanged               += OnIsMapOpenChanged;
             GameService.GameIntegration.Gw2Instance.IsInGameChanged += OnIsInGameChanged;
+        }
+
+        private void OnShown(object sender, EventArgs e) {
+            this.IsVisible = true;
+        }
+
+        private void OnHidden(object sender, EventArgs e) {
+            this.IsVisible = false;
         }
 
         private void OnWindowResized(object sender, RegionChangedEventArgs e) {
@@ -215,21 +226,24 @@ namespace Nekres.Mistwar.Services {
             return await MapUtil.GetMapExpanded(map, map.DefaultFloor);
         }
 
-        public void Toggle(bool forceHide = false, bool silent = false)
+        public bool Toggle(bool forceHide = false)
         {
-            if (!this.IsReady)
-            {
+            if (forceHide || this.IsVisible) {
+                _window.Hide();
+                return false;
+            }
+
+            if (!this.IsReady) {
                 ScreenNotification.ShowNotification($"({MistwarModule.ModuleInstance.Name}) Map images are being prepared...", ScreenNotification.NotificationType.Error);
-                return;
+                return false;
             }
 
             if (!GameUtil.IsAvailable() || !GameService.Gw2Mumble.CurrentMap.Type.IsWvWMatch()) {
-                _window.Hide();
-                return;
+                return false;
             }
 
-            _window.ToggleWindow();
-            //_mapControl?.Toggle(forceHide, silent);
+            _window.Show();
+            return true;
         }
 
         private void OnIsMapOpenChanged(object o, ValueEventArgs<bool> e)
@@ -238,7 +252,7 @@ namespace Nekres.Mistwar.Services {
                 return;
             }
 
-            this.Toggle(true, true);
+            this.Toggle(true);
         }
 
         private void OnIsInGameChanged(object o, ValueEventArgs<bool> e)
@@ -247,7 +261,7 @@ namespace Nekres.Mistwar.Services {
                 return;
             }
 
-            this.Toggle(true, true);
+            this.Toggle(true);
         }
 
         private async void OnMapChanged(object o, ValueEventArgs<int> e)
@@ -258,10 +272,12 @@ namespace Nekres.Mistwar.Services {
         public void Dispose()
         {
             _window.ContentResized                                  -= OnWindowResized;
+            _window.Shown                                           -= OnShown;
+            _window.Hidden                                          -= OnHidden;
             GameService.Gw2Mumble.CurrentMap.MapChanged             -= OnMapChanged;
             GameService.Gw2Mumble.UI.IsMapOpenChanged               -= OnIsMapOpenChanged;
             GameService.GameIntegration.Gw2Instance.IsInGameChanged -= OnIsInGameChanged;
-            _mapControl?.Dispose();
+            _window.Dispose();
             foreach (var tex in _mapCache.Values)
             {
                 tex?.Dispose();

@@ -185,7 +185,7 @@ namespace Nekres.Mistwar {
 
         private void OnModuleIconClick(object o, MouseEventArgs e)
         {
-            _mapService.Toggle();
+            MarkerService.Toggle(_mapService.Toggle());
         }
 
         private void UpdateModuleLoading(string loadingMessage)
@@ -207,8 +207,7 @@ namespace Nekres.Mistwar {
 
         private void OnToggleKeyActivated(object o, EventArgs e)
         {
-            _mapService.Toggle();
-            MarkerService?.Toggle(_mapService.IsVisible);
+            MarkerService.Toggle(_mapService.Toggle());
         }
 
         private void OnToggleMarkersKeyActivated(object o, EventArgs e)

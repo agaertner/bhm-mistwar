@@ -94,26 +94,6 @@ namespace Nekres.Mistwar.UI.Controls {
             this.SetOpacity(1);
         }
 
-        public void Toggle(bool forceHide = false, bool silent = false, float tDuration = 0.1f) {
-            bool isWvWMatch = GameService.Gw2Mumble.CurrentMap.Type.IsWvWMatch();
-            if (!forceHide && GameUtil.IsAvailable() && isWvWMatch && !_visible) {
-                _visible     = true;
-                this.Visible = true;
-                if (!silent) {
-                    GameService.Content.PlaySoundEffectByName("page-open-" + RandomUtil.GetRandom(1, 3));
-                    GameService.Animation.Tweener.Tween(this, new { Opacity = 1.0f }, 0.35f);
-                }
-            } else if (_visible) {
-                _visible = false;
-                if (!silent) {
-                    GameService.Content.PlaySoundEffectByName("window-close");
-                    GameService.Animation.Tweener.Tween(this, new { Opacity = 0.0f }, tDuration).OnComplete(this.Hide);
-                } else {
-                    this.Visible = false;
-                }
-            }
-        }
-
         internal void SetOpacity(float opacity)
         {
             TextureOpacity = opacity;
@@ -228,14 +208,17 @@ namespace Nekres.Mistwar.UI.Controls {
                 return;
             }
 
+            this.SetOpacity(this.Parent.Opacity);
+
             spriteBatch.End();
             spriteBatch.Begin(_grayscaleSpriteBatchParams);
 
-            var bgSize = ComputeAspectRatioSize(bounds.Size, _texture.Bounds.Size);
+            var bgSize   = ComputeAspectRatioSize(bounds.Size, _texture.Bounds.Size);
+            var bgOffset = new Point((bounds.Width - bgSize.X) / 2, (bounds.Height - bgSize.Y) / 2);
             // Draw the texture
             spriteBatch.DrawOnCtrl(this,
                 _texture,
-                new Rectangle(0,0, bgSize.X, bgSize.Y),
+                new Rectangle(bgOffset, bgSize),
                 _texture.Bounds,
                 _tint,
                 0f,
@@ -262,7 +245,7 @@ namespace Nekres.Mistwar.UI.Controls {
                         return new Vector2(r.X, r.Y);
                     }).ToArray();
 
-                    spriteBatch.DrawPolygon(new Vector2(0, 0), sectorBounds, teamColor, 4);
+                    spriteBatch.DrawPolygon(new Vector2(bgOffset.X, bgOffset.Y), sectorBounds, teamColor, 4);
                 }
             }
 
@@ -275,8 +258,8 @@ namespace Nekres.Mistwar.UI.Controls {
                     }
 
                     // Calculate draw bounds.
-                    var dest = new Rectangle((int)(ratio * objectiveEntity.Center.X), (int)(ratio * objectiveEntity.Center.Y), 
-                                             (int)(ratio * objectiveEntity.Icon.Bounds.Size.X) * 2, (int)(ratio * objectiveEntity.Icon.Bounds.Size.Y) * 2);
+                    var dest = new Rectangle(bgOffset.X + (int)(ratio * objectiveEntity.Center.X), bgOffset.Y + (int)(ratio       * objectiveEntity.Center.Y), 
+                                             (int)(ratio              * objectiveEntity.Icon.Bounds.Size.X) * 2, (int)(ratio * objectiveEntity.Icon.Bounds.Size.Y) * 2);
 
                     // Draw the objective.
                     spriteBatch.DrawWvwObjectiveOnCtrl(this, objectiveEntity, dest, 1f, 0.75f, MistwarModule.ModuleInstance.DrawObjectiveNamesSetting.Value);
@@ -307,11 +290,9 @@ namespace Nekres.Mistwar.UI.Controls {
                         continue;
                     }
 
-                    var wpDest = new Rectangle(
-                        (int)(ratio * wp.Coord.X) - (int)(ratio * 64) / 4,
-                        (int)(ratio * wp.Coord.Y) - (int)(ratio * 64) / 4,
-                        (int)(ratio * 64) * 2,
-                        (int)(ratio * 64) * 2);
+                    var wpDest = new Rectangle(bgOffset.X + (int)(ratio * wp.Coord.X) - (int)(ratio * 64) / 4,
+                                               bgOffset.Y + (int)(ratio * wp.Coord.Y) - (int)(ratio * 64) / 4, 
+                                               (int)(ratio * 64) * 2, (int)(ratio * 64) * 2);
 
                     var tex = objectiveEntity.GetWayPointIcon(wpDest.Contains(this.RelativeMousePosition));
 
@@ -337,8 +318,8 @@ namespace Nekres.Mistwar.UI.Controls {
 
                 var size  = ComputeAspectRatioSize(bounds.Size, _playerArrow.Bounds.Size);
 
-                var tDest = new Rectangle((int) (ratio * fit.X), (int) (ratio * fit.Y), size.X, size.Y);
-                var rot = Math.Atan2(GameService.Gw2Mumble.PlayerCharacter.Forward.X, GameService.Gw2Mumble.PlayerCharacter.Forward.Y) * 3.6f / Math.PI; // rotate the arrow in the forward direction
+                var tDest = new Rectangle(bgOffset.X + (int)(ratio * fit.X), bgOffset.Y + (int)(ratio * fit.Y), size.X, size.Y);
+                var rot   = Math.Atan2(GameService.Gw2Mumble.PlayerCharacter.Forward.X, GameService.Gw2Mumble.PlayerCharacter.Forward.Y) * 3.6f / Math.PI; // rotate the arrow in the forward direction
 
                 spriteBatch.DrawOnCtrl(this, _playerArrow, new Rectangle(tDest.X + tDest.Width / 4, tDest.Y + tDest.Height / 4, tDest.Width, tDest.Height), _playerArrow.Bounds, Color.White, (float) rot, new Vector2(_playerArrow.Width / 2f, _playerArrow.Height / 2f));
             }
