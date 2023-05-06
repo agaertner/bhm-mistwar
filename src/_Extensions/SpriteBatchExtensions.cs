@@ -60,19 +60,23 @@ namespace Nekres.Mistwar
 			    }
             }
 
-			// draw type icon
-			spriteBatch.DrawOnCtrl(control, objectiveEntity.Icon, new Rectangle(dest.X - (int)(scale * dest.Width) / 2, dest.Y - (int)(scale * dest.Height) / 2, (int)(scale * dest.Width), (int)(scale * dest.Height)), objectiveEntity.Icon.Bounds, teamColor);
+            var typeIconBnds = new Rectangle(dest.X - (int) (scale * dest.Width) / 2, dest.Y - (int) (scale * dest.Height) / 2, (int) (scale * dest.Width), (int) (scale * dest.Height));
+            // draw type icon
+            spriteBatch.DrawOnCtrl(control, objectiveEntity.Icon, typeIconBnds, objectiveEntity.Icon.Bounds, teamColor);
 
             var doStroke = opacity > 0.99f;
 
             // draw remaining duration of the protection buff
             if (objectiveEntity.HasBuff(out var remainingTime))
 			{
-				var text = remainingTime.ToString(@"m\:ss");
-				var size = font.MeasureString(text);
-				var texSize = Blish_HUD.PointExtensions.ResizeKeepAspect(new Point(objectiveEntity.BuffTexture.Width, objectiveEntity.BuffTexture.Height), (int)(scale * size.Width), (int)(scale * size.Height));
-                var iconBnds = new Rectangle(dest.X - 20, (int)(dest.Y - scale * 80), texSize.X, texSize.Y);
-                var textBnds = new Rectangle(iconBnds.Right + 3, iconBnds.Y, iconBnds.Width, iconBnds.Height);
+				var text     = remainingTime.ToString(@"m\:ss");
+				var size     = font.MeasureString(text);
+				var texSize  = Blish_HUD.PointExtensions.ResizeKeepAspect(new Point(objectiveEntity.BuffTexture.Width, objectiveEntity.BuffTexture.Height), (int)(scale * size.Width), (int)(scale * size.Height));
+                
+                var iconBnds = new Rectangle(dest.X - (int)(size.Width + texSize.X) / 2, typeIconBnds.Top - texSize.Y - 10, texSize.X, texSize.Y);
+
+                var textBnds = new Rectangle(iconBnds.Right + 3, iconBnds.Y, (int)size.Width, iconBnds.Height);
+
                 spriteBatch.DrawOnCtrl(control, objectiveEntity.BuffTexture, iconBnds, objectiveEntity.BuffTexture.Bounds, whiteColor);
                 spriteBatch.DrawStringOnCtrl(control, text, font, textBnds, textColor, false, doStroke);
             }
