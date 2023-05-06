@@ -39,8 +39,6 @@ namespace Nekres.Mistwar.Services {
             }
         }
 
-        public bool IsVisible;
-
         public bool IsLoading { get; private set; }
         public bool IsReady   { get; private set; }
 
@@ -86,19 +84,9 @@ namespace Nekres.Mistwar.Services {
             };
 
             _window.ContentResized                                  += OnWindowResized;
-            _window.Shown                                           += OnShown;
-            _window.Hidden                                          += OnHidden;
             GameService.Gw2Mumble.CurrentMap.MapChanged             += OnMapChanged;
             GameService.Gw2Mumble.UI.IsMapOpenChanged               += OnIsMapOpenChanged;
             GameService.GameIntegration.Gw2Instance.IsInGameChanged += OnIsInGameChanged;
-        }
-
-        private void OnShown(object sender, EventArgs e) {
-            this.IsVisible = true;
-        }
-
-        private void OnHidden(object sender, EventArgs e) {
-            this.IsVisible = false;
         }
 
         private void OnWindowResized(object sender, RegionChangedEventArgs e) {
@@ -226,24 +214,23 @@ namespace Nekres.Mistwar.Services {
             return await MapUtil.GetMapExpanded(map, map.DefaultFloor);
         }
 
-        public bool Toggle(bool forceHide = false)
+        public void Toggle(bool forceHide = false)
         {
-            if (forceHide || this.IsVisible) {
+            if (forceHide) {
                 _window.Hide();
-                return false;
+                return;
             }
 
             if (!this.IsReady) {
                 ScreenNotification.ShowNotification($"({MistwarModule.ModuleInstance.Name}) Map images are being prepared...", ScreenNotification.NotificationType.Error);
-                return false;
+                return;
             }
 
             if (!GameUtil.IsAvailable() || !GameService.Gw2Mumble.CurrentMap.Type.IsWvWMatch()) {
-                return false;
+                return;
             }
 
-            _window.Show();
-            return true;
+            _window.ToggleWindow();
         }
 
         private void OnIsMapOpenChanged(object o, ValueEventArgs<bool> e)
@@ -272,8 +259,6 @@ namespace Nekres.Mistwar.Services {
         public void Dispose()
         {
             _window.ContentResized                                  -= OnWindowResized;
-            _window.Shown                                           -= OnShown;
-            _window.Hidden                                          -= OnHidden;
             GameService.Gw2Mumble.CurrentMap.MapChanged             -= OnMapChanged;
             GameService.Gw2Mumble.UI.IsMapOpenChanged               -= OnIsMapOpenChanged;
             GameService.GameIntegration.Gw2Instance.IsInGameChanged -= OnIsInGameChanged;

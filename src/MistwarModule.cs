@@ -1,5 +1,4 @@
 ﻿using Blish_HUD;
-using Blish_HUD.Content;
 using Blish_HUD.Controls;
 using Blish_HUD.Extended;
 using Blish_HUD.Extended.Core.Views;
@@ -10,12 +9,12 @@ using Blish_HUD.Modules.Managers;
 using Blish_HUD.Settings;
 using Gw2Sharp.WebApi.V2.Models;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Nekres.Mistwar.Services;
 using System;
 using System.ComponentModel.Composition;
 using System.Threading.Tasks;
-using Microsoft.Xna.Framework.Graphics;
 
 namespace Nekres.Mistwar {
     [Export(typeof(Module))]
@@ -185,7 +184,7 @@ namespace Nekres.Mistwar {
 
         private void OnModuleIconClick(object o, MouseEventArgs e)
         {
-            MarkerService.Toggle(_mapService.Toggle());
+            _mapService.Toggle();
         }
 
         private void UpdateModuleLoading(string loadingMessage)
@@ -207,7 +206,7 @@ namespace Nekres.Mistwar {
 
         private void OnToggleKeyActivated(object o, EventArgs e)
         {
-            MarkerService.Toggle(_mapService.Toggle());
+            _mapService.Toggle();
         }
 
         private void OnToggleMarkersKeyActivated(object o, EventArgs e)
@@ -274,8 +273,13 @@ namespace Nekres.Mistwar {
                 }
 
                 var obj = await WvwService.GetObjectives(GameService.Gw2Mumble.CurrentMap.Id);
-                MarkerService?.ReloadMarkers(obj);
-                MarkerService?.Toggle(_mapService.IsVisible);
+
+                if (MarkerService == null) {
+                    return;
+                }
+
+                MarkerService.ReloadMarkers(obj);
+                MarkerService.Toggle();
                 return;
             }
             MarkerService?.Dispose();
