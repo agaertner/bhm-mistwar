@@ -13,7 +13,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using File = System.IO.File;
-
+using Rectangle = Microsoft.Xna.Framework.Rectangle;
 namespace Nekres.Mistwar.Services {
     internal class MapService : IDisposable
     {
@@ -48,6 +48,9 @@ namespace Nekres.Mistwar.Services {
         private          DirectoriesManager              _dir;
         private          WvwService                      _wvw;
         private          MapImage                        _mapControl;
+        private          StandardWindow                  _window;
+
+        private const int PADDING_RIGHT = 5;
 
         public MapService(DirectoriesManager dir, WvwService wvw, IProgress<string> loadingIndicator)
         {
@@ -55,16 +58,40 @@ namespace Nekres.Mistwar.Services {
             _wvw = wvw;
             _loadingIndicator = loadingIndicator;
             _mapCache = new Dictionary<int, AsyncTexture2D>();
-            _mapControl = new MapImage
-            {
-                Parent = GameService.Graphics.SpriteScreen,
-                Size = new Point(0, 0),
-                Location = new Point(0, 0),
-                Visible = false
+
+            _window = new StandardWindow(GameService.Content.DatAssetCache.GetTextureFromAssetId(155985),
+                                         new Rectangle(40, 26, 913, 691),
+                                         new Rectangle(70, 71, 839, 605)) {
+                Parent        = GameService.Graphics.SpriteScreen,
+                Title         = string.Empty,
+                Emblem        = MistwarModule.ModuleInstance.CornerTex,
+                Subtitle      = MistwarModule.ModuleInstance.Name,
+                Id            = "Mistwar_Map_86a367fa-61ba-4bab-ae3b-fb08b407214a",
+                SavesPosition = true,
+                SavesSize     = true,
+                CanResize     = true,
+                Width         = 800,
+                Height        = 800,
+                Left = (GameService.Graphics.SpriteScreen.Width - 800) / 2,
+                Top = (GameService.Graphics.SpriteScreen.Height - 800) / 2
             };
-            GameService.Gw2Mumble.CurrentMap.MapChanged += OnMapChanged;
-            GameService.Gw2Mumble.UI.IsMapOpenChanged += OnIsMapOpenChanged;
+            
+            _mapControl = new MapImage {
+                Parent   = _window,
+                Width = _window.ContentRegion.Width - PADDING_RIGHT,
+                Height = _window.ContentRegion.Height - PADDING_RIGHT,
+                Left = 0,
+                Top = 0
+            };
+
+            _window.ContentResized                                  += OnWindowResized;
+            GameService.Gw2Mumble.CurrentMap.MapChanged             += OnMapChanged;
+            GameService.Gw2Mumble.UI.IsMapOpenChanged               += OnIsMapOpenChanged;
             GameService.GameIntegration.Gw2Instance.IsInGameChanged += OnIsInGameChanged;
+        }
+
+        private void OnWindowResized(object sender, RegionChangedEventArgs e) {
+            _mapControl.Size = new Point(e.CurrentRegion.Size.X - PADDING_RIGHT, e.CurrentRegion.Size.Y - PADDING_RIGHT);
         }
 
         public void DownloadMaps(int[] mapIds)
@@ -167,7 +194,11 @@ namespace Nekres.Mistwar.Services {
 
             _mapControl.Texture.SwapTexture(tex);
 
-            _mapControl.Map = await GetMap(GameService.Gw2Mumble.CurrentMap.Id);
+            var map = await GetMap(GameService.Gw2Mumble.CurrentMap.Id);
+
+            _mapControl.Map = map;
+
+            _window.Title = map?.Name ?? string.Empty;
 
             var wvwObjectives = await _wvw.GetObjectives(GameService.Gw2Mumble.CurrentMap.Id);
 
@@ -191,7 +222,14 @@ namespace Nekres.Mistwar.Services {
                 ScreenNotification.ShowNotification($"({MistwarModule.ModuleInstance.Name}) Map images are being prepared...", ScreenNotification.NotificationType.Error);
                 return;
             }
-            _mapControl?.Toggle(forceHide, silent);
+
+            if (!GameUtil.IsAvailable() || !GameService.Gw2Mumble.CurrentMap.Type.IsWvWMatch()) {
+                _window.Hide();
+                return;
+            }
+
+            _window.ToggleWindow();
+            //_mapControl?.Toggle(forceHide, silent);
         }
 
         private void OnIsMapOpenChanged(object o, ValueEventArgs<bool> e)
@@ -219,8 +257,9 @@ namespace Nekres.Mistwar.Services {
 
         public void Dispose()
         {
-            GameService.Gw2Mumble.CurrentMap.MapChanged -= OnMapChanged;
-            GameService.Gw2Mumble.UI.IsMapOpenChanged -= OnIsMapOpenChanged;
+            _window.ContentResized                                  -= OnWindowResized;
+            GameService.Gw2Mumble.CurrentMap.MapChanged             -= OnMapChanged;
+            GameService.Gw2Mumble.UI.IsMapOpenChanged               -= OnIsMapOpenChanged;
             GameService.GameIntegration.Gw2Instance.IsInGameChanged -= OnIsInGameChanged;
             _mapControl?.Dispose();
             foreach (var tex in _mapCache.Values)
