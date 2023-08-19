@@ -1,7 +1,6 @@
 ﻿using Blish_HUD;
 using Blish_HUD.Content;
 using Blish_HUD.Controls;
-using Blish_HUD.Extended;
 using Blish_HUD.Modules.Managers;
 using Gw2Sharp.WebApi.V2.Models;
 using Microsoft.Xna.Framework;
@@ -12,6 +11,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Blish_HUD.Extended;
 using File = System.IO.File;
 using Rectangle = Microsoft.Xna.Framework.Rectangle;
 namespace Nekres.Mistwar.Services {
@@ -137,8 +137,7 @@ namespace Nekres.Mistwar.Services {
 
             var filePath = Path.Combine(_dir.GetFullDirectoryPath("mistwar"), $"{id}.png");
 
-            this.IsReady = LoadFromCache(filePath, tex);
-            if (this.IsReady) {
+            if (LoadFromCache(filePath, tex)) {
                 await ReloadMap();
                 return;
             }
@@ -151,8 +150,7 @@ namespace Nekres.Mistwar.Services {
 
             await MapUtil.BuildMap(map, filePath, true, _loadingIndicator);
 
-            this.IsReady = LoadFromCache(filePath, tex);
-            if (this.IsReady) {
+            if (LoadFromCache(filePath, tex)) {
                 await ReloadMap();
             }
         }
@@ -179,6 +177,8 @@ namespace Nekres.Mistwar.Services {
         public async Task ReloadMap()
         {
             if (!GameService.Gw2Mumble.CurrentMap.Type.IsWvWMatch()) {
+                this.IsReady = false;
+                Toggle(true);
                 return;
             }
 
@@ -187,6 +187,8 @@ namespace Nekres.Mistwar.Services {
             lock(_mapCache)
             {
                 if (!_mapCache.TryGetValue(GameService.Gw2Mumble.CurrentMap.Id, out tex) || tex == null) {
+                    this.IsReady = false;
+                    Toggle(true);
                     return;
                 }
             }
@@ -195,22 +197,35 @@ namespace Nekres.Mistwar.Services {
 
             var map = await GetMap(GameService.Gw2Mumble.CurrentMap.Id);
 
+            if (map == null) {
+                this.IsReady = false;
+                Toggle(true);
+                return;
+            }
+
             _mapControl.Map = map;
 
-            _window.Title = map?.Name ?? string.Empty;
+            _window.Title = map.Name;
 
             var wvwObjectives = await _wvw.GetObjectives(GameService.Gw2Mumble.CurrentMap.Id);
 
             if (wvwObjectives.IsNullOrEmpty()) {
+                this.IsReady = false;
+                Toggle(true);
                 return;
             }
             _mapControl.WvwObjectives = wvwObjectives;
             MistwarModule.ModuleInstance?.MarkerService?.ReloadMarkers(wvwObjectives);
+
+            this.IsReady = true;
         }
 
         private async Task<ContinentFloorRegionMap> GetMap(int mapId)
         {
             var map = await MapUtil.GetMap(mapId);
+            if (map == null) {
+                return null;
+            }
             return await MapUtil.GetMapExpanded(map, map.DefaultFloor);
         }
 
@@ -222,7 +237,7 @@ namespace Nekres.Mistwar.Services {
             }
 
             if (!this.IsReady) {
-                ScreenNotification.ShowNotification($"({MistwarModule.ModuleInstance.Name}) Map images are being prepared...", ScreenNotification.NotificationType.Error);
+                ScreenNotification.ShowNotification($"({MistwarModule.ModuleInstance.Name}) Service unavailable. Current match not loaded.", ScreenNotification.NotificationType.Error);
                 return;
             }
 

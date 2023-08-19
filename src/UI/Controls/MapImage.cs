@@ -107,6 +107,12 @@ namespace Nekres.Mistwar.UI.Controls {
 
         protected override async void OnClick(MouseEventArgs e)
         {
+            base.OnClick(e);
+
+            if (Map == null) {
+                return;
+            }
+
             foreach (var bound in _wayPointBounds.ToList())
             {
                 if (!bound.Value.Contains(this.RelativeMousePosition)) {
@@ -135,11 +141,16 @@ namespace Nekres.Mistwar.UI.Controls {
                 }
                 break;
             }
-            base.OnClick(e);
         }
 
         protected override void OnMouseMoved(MouseEventArgs e)
         {
+            base.OnMouseMoved(e);
+
+            if (Map == null) {
+                return;
+            }
+
             var wps = _wayPointBounds.ToList();
             foreach (var bound in wps)
             {
@@ -167,7 +178,6 @@ namespace Nekres.Mistwar.UI.Controls {
             {
                 this.BasicTooltipText = string.Empty;
             }
-            base.OnMouseMoved(e);
         }
 
         protected override void DisposeControl()
@@ -204,7 +214,7 @@ namespace Nekres.Mistwar.UI.Controls {
 
         public override void PaintBeforeChildren(SpriteBatch spriteBatch, Rectangle bounds)
         {
-            if (!_texture.HasTexture || WvwObjectives == null) {
+            if (!_texture.HasTexture || WvwObjectives == null || Map == null) {
                 return;
             }
 
