@@ -1,8 +1,5 @@
 ﻿using Blish_HUD;
 using Blish_HUD.Controls;
-using Blish_HUD.Extended;
-using Blish_HUD.Extended.Core.Views;
-using Blish_HUD.Graphics.UI;
 using Blish_HUD.Input;
 using Blish_HUD.Modules;
 using Blish_HUD.Modules.Managers;
@@ -15,6 +12,7 @@ using Nekres.Mistwar.Services;
 using System;
 using System.ComponentModel.Composition;
 using System.Threading.Tasks;
+using Blish_HUD.Extended;
 
 namespace Nekres.Mistwar {
     [Export(typeof(Module))]
@@ -150,11 +148,6 @@ namespace Nekres.Mistwar {
                 MarkerService = new MarkerService();
             }
             _mapService = new MapService(DirectoriesManager, WvwService, GetModuleProgressHandler());
-        }
-
-        public override IView GetSettingsView()
-        {
-            return new SocialsSettingsView(new SocialsSettingsModel(this.SettingsManager.ModuleSettings, "https://pastebin.com/raw/Kk9DgVmL"));
         }
 
         protected override async Task LoadAsync()

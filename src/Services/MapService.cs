@@ -1,7 +1,6 @@
 ﻿using Blish_HUD;
 using Blish_HUD.Content;
 using Blish_HUD.Controls;
-using Blish_HUD.Extended;
 using Blish_HUD.Modules.Managers;
 using Gw2Sharp.WebApi.V2.Models;
 using Microsoft.Xna.Framework;
@@ -12,6 +11,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Blish_HUD.Extended;
 using File = System.IO.File;
 using Rectangle = Microsoft.Xna.Framework.Rectangle;
 namespace Nekres.Mistwar.Services {
@@ -195,9 +195,13 @@ namespace Nekres.Mistwar.Services {
 
             var map = await GetMap(GameService.Gw2Mumble.CurrentMap.Id);
 
+            if (map == null) {
+                return;
+            }
+
             _mapControl.Map = map;
 
-            _window.Title = map?.Name ?? string.Empty;
+            _window.Title = map.Name;
 
             var wvwObjectives = await _wvw.GetObjectives(GameService.Gw2Mumble.CurrentMap.Id);
 
@@ -211,6 +215,9 @@ namespace Nekres.Mistwar.Services {
         private async Task<ContinentFloorRegionMap> GetMap(int mapId)
         {
             var map = await MapUtil.GetMap(mapId);
+            if (map == null) {
+                return null;
+            }
             return await MapUtil.GetMapExpanded(map, map.DefaultFloor);
         }
 
