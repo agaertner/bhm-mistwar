@@ -183,11 +183,15 @@ namespace Nekres.Mistwar {
 
         private void OnModuleIconClick(object o, MouseEventArgs e)
         {
-            if (WvW.IsLoading || Maps.IsLoading) {
-                ScreenNotification.ShowNotification("WvW data is loading. Please wait.");
-                return;
+            if (ServicesLoaded()) {
+                Maps.Toggle();
             }
-            Maps.Toggle();
+        }
+
+        private void OnToggleKeyActivated(object o, EventArgs e) {
+            if (ServicesLoaded()) {
+                Maps.Toggle();
+            }
         }
 
         private void UpdateModuleLoading(string loadingMessage)
@@ -207,14 +211,20 @@ namespace Nekres.Mistwar {
             return new Progress<string>(UpdateModuleLoading);
         }
 
-        private void OnToggleKeyActivated(object o, EventArgs e)
-        {
-            if (WvW.IsLoading || Maps.IsLoading) {
-                ScreenNotification.ShowNotification("WvW data is loading. Please wait.");
-                return;
+        private bool ServicesLoaded() {
+            if (WvW.IsLoading) {
+                ScreenNotification.ShowNotification($"{Name} unavailable. WvW data not loaded.", ScreenNotification.NotificationType.Error);
+                GameService.Content.PlaySoundEffectByName("error");
+                return false;
             }
 
-            Maps.Toggle();
+            if (Maps.IsLoading) {
+                ScreenNotification.ShowNotification($"{Name} unavailable. Map not loaded.", ScreenNotification.NotificationType.Error);
+                GameService.Content.PlaySoundEffectByName("error");
+                return false;
+            }
+
+            return true;
         }
 
         private void OnToggleMarkersKeyActivated(object o, EventArgs e)

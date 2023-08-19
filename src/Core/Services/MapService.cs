@@ -39,7 +39,7 @@ namespace Nekres.Mistwar.Core.Services {
         }
 
         public bool IsLoading { get; private set; }
-        public bool IsReady   { get; private set; }
+        public bool IsAvailable   { get; private set; }
 
         private readonly IProgress<string>               _loadingIndicator;
         private          Dictionary<int, AsyncTexture2D> _mapCache;
@@ -48,8 +48,9 @@ namespace Nekres.Mistwar.Core.Services {
 
         private const int PADDING_RIGHT = 5;
 
-        public MapService(IProgress<string> loadingIndicator)
-        {
+        public MapService(IProgress<string> loadingIndicator) {
+            IsLoading = true;
+
             _loadingIndicator = loadingIndicator;
             _mapCache = new Dictionary<int, AsyncTexture2D>();
 
@@ -169,7 +170,7 @@ namespace Nekres.Mistwar.Core.Services {
         public async Task ReloadMap()
         {
             if (!GameService.Gw2Mumble.CurrentMap.Type.IsWvWMatch()) {
-                this.IsReady = false;
+                this.IsAvailable = false;
                 Toggle(true);
                 return;
             }
@@ -179,7 +180,7 @@ namespace Nekres.Mistwar.Core.Services {
             lock(_mapCache)
             {
                 if (!_mapCache.TryGetValue(GameService.Gw2Mumble.CurrentMap.Id, out tex) || tex == null) {
-                    this.IsReady = false;
+                    this.IsAvailable = false;
                     Toggle(true);
                     return;
                 }
@@ -190,7 +191,7 @@ namespace Nekres.Mistwar.Core.Services {
             var map = await GetMap(GameService.Gw2Mumble.CurrentMap.Id);
 
             if (map == null) {
-                this.IsReady = false;
+                this.IsAvailable = false;
                 Toggle(true);
                 return;
             }
@@ -202,14 +203,14 @@ namespace Nekres.Mistwar.Core.Services {
             var wvwObjectives = await MistwarModule.ModuleInstance.WvW.GetObjectives(GameService.Gw2Mumble.CurrentMap.Id);
 
             if (wvwObjectives.IsNullOrEmpty()) {
-                this.IsReady = false;
+                this.IsAvailable = false;
                 Toggle(true);
                 return;
             }
             _mapControl.WvwObjectives = wvwObjectives;
             MistwarModule.ModuleInstance?.Markers?.ReloadMarkers(wvwObjectives);
 
-            this.IsReady = true;
+            this.IsAvailable = true;
         }
 
         private async Task<ContinentFloorRegionMap> GetMap(int mapId)
@@ -228,8 +229,8 @@ namespace Nekres.Mistwar.Core.Services {
                 return;
             }
 
-            if (!this.IsReady) {
-                ScreenNotification.ShowNotification($"({MistwarModule.ModuleInstance.Name}) Service unavailable. Current match not loaded.", ScreenNotification.NotificationType.Error);
+            if (IsLoading || !IsAvailable) {
+                ScreenNotification.ShowNotification($"{MistwarModule.ModuleInstance.Name} unavailable. Map not loaded.", ScreenNotification.NotificationType.Error);
                 return;
             }
 
