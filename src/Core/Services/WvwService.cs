@@ -1,7 +1,6 @@
 ﻿using Blish_HUD;
 using Blish_HUD.Controls;
 using Blish_HUD.Extended;
-using Blish_HUD.Modules.Managers;
 using Gw2Sharp.WebApi.V2.Models;
 using Nekres.Mistwar.Entities;
 using System;
@@ -9,16 +8,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Nekres.Mistwar.Services {
+namespace Nekres.Mistwar.Core.Services {
     internal class WvwService : IDisposable
     {
         public Guid     CurrentGuild   { get; private set; }
         public WvwOwner CurrentTeam    { get; private set; }
         public DateTime LastChange     { get; private set; }
-        public string   LoadingMessage { get; private set; }
-        public bool     IsLoading      => !string.IsNullOrEmpty(LoadingMessage);
+        public string   RefreshMessage { get; private set; }
 
-        private Gw2ApiManager _api;
+        public bool IsRefreshing => !string.IsNullOrEmpty(this.RefreshMessage);
+        public bool IsLoading    => !_worlds?.Any() ?? true;
 
         private AsyncCache<int, List<WvwObjectiveEntity>> _wvwObjectiveCache;
 
@@ -35,27 +34,43 @@ namespace Nekres.Mistwar.Services {
             EternalBattlegrounds = 38
         }
 
-        public WvwService(Gw2ApiManager api)
+        public WvwService()
         {
             _prevApiRequestTime = DateTime.MinValue.ToUniversalTime();
-            _api = api;
-            _wvwObjectiveCache = new AsyncCache<int, List<WvwObjectiveEntity>>(RequestObjectives);
+            _wvwObjectiveCache  = new AsyncCache<int, List<WvwObjectiveEntity>>(RequestObjectives);
 
             this.LastChange = DateTime.MinValue.ToUniversalTime();
         }
 
         public async Task LoadAsync() {
-            _worlds = await TaskUtil.RetryAsync(() => _api.Gw2ApiClient.V2.Worlds.AllAsync());
+            _worlds = await TaskUtil.RetryAsync(() => MistwarModule.ModuleInstance.Gw2ApiManager.Gw2ApiClient.V2.Worlds.AllAsync());
         }
 
         public async Task Update()
         {
-            if (!GameService.Gw2Mumble.CurrentMap.Type.IsWvWMatch() || DateTime.UtcNow.Subtract(_prevApiRequestTime).TotalSeconds < 15) {
+            // Don't update if we haven't loaded yet.
+            if (IsLoading) {
                 return;
             }
+
+            // Don't update if we're already updating.
+            if (IsRefreshing) {
+                return;
+            }
+
+            // Only update if we're in WvW.
+            if (!GameService.Gw2Mumble.CurrentMap.Type.IsWvWMatch()) {
+                return;
+            }
+
+            // Only update every 15 seconds.
+            if (DateTime.UtcNow.Subtract(_prevApiRequestTime).TotalSeconds < 15) {
+                return;
+            }
+
             _prevApiRequestTime = DateTime.UtcNow;
 
-            this.LoadingMessage = "Refreshing";
+            this.RefreshMessage = "Refreshing";
 
             this.CurrentGuild   = await GetRepresentedGuild();
 
@@ -81,16 +96,16 @@ namespace Nekres.Mistwar.Services {
                 ScreenNotification.ShowNotification($"({MistwarModule.ModuleInstance.Name}) No changes in the last {mins} minutes.", ScreenNotification.NotificationType.Warning);
             }
 
-            LoadingMessage = string.Empty;
+            this.RefreshMessage = string.Empty;
         }
 
         public async Task<Guid> GetRepresentedGuild()
         {
-            if (!_api.HasPermissions(new []{TokenPermission.Account, TokenPermission.Characters})) {
+            if (!MistwarModule.ModuleInstance.Gw2ApiManager.HasPermissions(new []{TokenPermission.Account, TokenPermission.Characters})) {
                 return Guid.Empty;
             }
 
-            var character = await TaskUtil.TryAsync(() => _api.Gw2ApiClient.V2.Characters[GameService.Gw2Mumble.PlayerCharacter.Name].GetAsync());
+            var character = await TaskUtil.TryAsync(() => MistwarModule.ModuleInstance.Gw2ApiManager.Gw2ApiClient.V2.Characters[GameService.Gw2Mumble.PlayerCharacter.Name].GetAsync());
             return character?.Guild ?? Guid.Empty;
         }
 
@@ -115,18 +130,16 @@ namespace Nekres.Mistwar.Services {
 
         public async Task<int> GetWorldId()
         {
-            if (!_api.HasPermission(TokenPermission.Account)) {
+            if (!MistwarModule.ModuleInstance.Gw2ApiManager.HasPermission(TokenPermission.Account)) {
                 return -1;
             }
 
-            var account = await TaskUtil.TryAsync(() => _api.Gw2ApiClient.V2.Account.GetAsync());
+            var account = await TaskUtil.TryAsync(() => MistwarModule.ModuleInstance.Gw2ApiManager.Gw2ApiClient.V2.Account.GetAsync());
             return account?.World ?? -1;
         }
 
         public int[] GetWvWMapIds()
         {
-            /*var matches = await TaskUtil.RetryAsync(() => _api.Gw2ApiClient.V2.Wvw.Matches.World(worldId).GetAsync());
-            return matches?.Maps.Select(m => m.Id).ToArray() ?? Array.Empty<int>();*/
             return Enum.GetValues(typeof(WvwMap)).Cast<int>().ToArray(); // Saving us a request.
         }
 
@@ -139,7 +152,7 @@ namespace Nekres.Mistwar.Services {
         {
             var objEntities = await GetObjectives(mapId);
 
-            var match = await TaskUtil.TryAsync(() => _api.Gw2ApiClient.V2.Wvw.Matches.World(worldId).GetAsync());
+            var match = await TaskUtil.TryAsync(() => MistwarModule.ModuleInstance.Gw2ApiManager.Gw2ApiClient.V2.Wvw.Matches.World(worldId).GetAsync());
             
             if (match == null) {
                 return;
@@ -177,14 +190,14 @@ namespace Nekres.Mistwar.Services {
         }
 
         private async Task<List<WvwObjectiveEntity>> RequestObjectives(int mapId) {
-            var wvwObjectives = await TaskUtil.RetryAsync(() => _api.Gw2ApiClient.V2.Wvw.Objectives.AllAsync());
+            var wvwObjectives = await TaskUtil.RetryAsync(() => MistwarModule.ModuleInstance.Gw2ApiManager.Gw2ApiClient.V2.Wvw.Objectives.AllAsync());
 
             if (wvwObjectives.IsNullOrEmpty()) {
                 return Enumerable.Empty<WvwObjectiveEntity>().ToList();
             }
 
-            var map           = await MapUtil.GetMap(mapId);
-            var mapExpanded   = await MapUtil.GetMapExpanded(map, map.DefaultFloor);
+            var map         = await MistwarModule.ModuleInstance.Resources.GetMap(mapId);
+            var mapExpanded = await MistwarModule.ModuleInstance.Resources.GetMapExpanded(map, map.DefaultFloor);
 
             if (mapExpanded == null) {
                 return Enumerable.Empty<WvwObjectiveEntity>().ToList();
