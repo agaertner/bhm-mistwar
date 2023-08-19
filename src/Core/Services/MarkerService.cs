@@ -1,12 +1,11 @@
 ﻿using Blish_HUD;
 using Microsoft.Xna.Framework;
+using Nekres.Mistwar.Core.UI.Controls;
 using Nekres.Mistwar.Entities;
-using Nekres.Mistwar.UI.Controls;
 using System;
 using System.Collections.Generic;
 
-namespace Nekres.Mistwar.Services
-{
+namespace Nekres.Mistwar.Core.Services {
     internal class MarkerService : IDisposable
     {
         private MarkerBillboard _billboard;

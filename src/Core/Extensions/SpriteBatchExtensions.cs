@@ -23,7 +23,7 @@ namespace Nekres.Mistwar
             // Configure colors and apply opacity
 			var teamColor = objectiveEntity.TeamColor.GetColorBlindType(MistwarModule.ModuleInstance.ColorTypeSetting.Value) * opacity;
             var borderColor = Color.Black * opacity;
-            var textColor = WvwObjectiveEntity.BrightGold * (opacity + 0.2f);
+            var textColor = MistwarModule.ModuleInstance.Resources.BrightGold * (opacity + 0.2f);
             var whiteColor = Color.White * opacity;
 
             var tDest = dest.ToBounds(control.AbsoluteBounds); // Clamped destination. Native DrawShape calls expect it.

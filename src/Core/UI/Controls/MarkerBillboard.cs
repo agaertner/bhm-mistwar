@@ -10,7 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Rectangle = Microsoft.Xna.Framework.Rectangle;
 
-namespace Nekres.Mistwar.UI.Controls {
+namespace Nekres.Mistwar.Core.UI.Controls {
     internal class MarkerBillboard : Control
     {
         public IEnumerable<WvwObjectiveEntity> WvwObjectives;
@@ -43,7 +43,7 @@ namespace Nekres.Mistwar.UI.Controls {
             var objectives = WvwObjectives.Where(x => x.Icon != null);
             if (MistwarModule.ModuleInstance.HideAlliedMarkersSetting.Value)
             {
-                objectives = objectives.Where(x => x.Owner != MistwarModule.ModuleInstance.WvwService.CurrentTeam);
+                objectives = objectives.Where(x => x.Owner != MistwarModule.ModuleInstance.WvW.CurrentTeam);
             }
 
             // Order by distance.

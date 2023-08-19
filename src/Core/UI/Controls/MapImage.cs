@@ -15,7 +15,7 @@ using System.Linq;
 using Color = Microsoft.Xna.Framework.Color;
 using Point = Microsoft.Xna.Framework.Point;
 using Rectangle = Microsoft.Xna.Framework.Rectangle;
-namespace Nekres.Mistwar.UI.Controls {
+namespace Nekres.Mistwar.Core.UI.Controls {
     internal class MapImage : Container
     {
         private IEnumerable<WvwObjectiveEntity> _wvwObjectives;
@@ -39,7 +39,7 @@ namespace Nekres.Mistwar.UI.Controls {
             }
         }
 
-        protected AsyncTexture2D _texture;
+        private AsyncTexture2D _texture;
         public AsyncTexture2D Texture
         {
             get => _texture;
@@ -170,7 +170,7 @@ namespace Nekres.Mistwar.UI.Controls {
                         break;
                     }
 
-                    wpName = MistwarModule.ModuleInstance.WvwService.GetWorldName(obj.Owner) + wpName;
+                    wpName = MistwarModule.ModuleInstance.WvW.GetWorldName(obj.Owner) + wpName;
                 }
                 this.BasicTooltipText = wpName;
             }
@@ -246,7 +246,7 @@ namespace Nekres.Mistwar.UI.Controls {
             {
                 // Draw sector boundaries
                 // These need to be iterated separately to be drawn before any other content to avoid overlapping.
-                foreach (var objectiveEntity in WvwObjectives.OrderBy(x => x.Owner == MistwarModule.ModuleInstance.WvwService.CurrentTeam))
+                foreach (var objectiveEntity in WvwObjectives.OrderBy(x => x.Owner == MistwarModule.ModuleInstance.WvW.CurrentTeam))
                 {
                     var teamColor = objectiveEntity.TeamColor.GetColorBlindType(MistwarModule.ModuleInstance.ColorTypeSetting.Value, (int)(TextureOpacity * 255));
 
@@ -284,7 +284,7 @@ namespace Nekres.Mistwar.UI.Controls {
                             continue;
                         }
 
-                        if (objectiveEntity.Owner != MistwarModule.ModuleInstance.WvwService.CurrentTeam) {
+                        if (objectiveEntity.Owner != MistwarModule.ModuleInstance.WvW.CurrentTeam) {
                             continue; // Skip opposing team's emergency waypoints.
                         }
 
@@ -304,7 +304,9 @@ namespace Nekres.Mistwar.UI.Controls {
                                                bgOffset.Y + (int)(ratio * wp.Coord.Y) - (int)(ratio * 64) / 4, 
                                                (int)(ratio * 64) * 2, (int)(ratio * 64) * 2);
 
-                    var tex = objectiveEntity.GetWayPointIcon(wpDest.Contains(this.RelativeMousePosition));
+                    var tex = MistwarModule.ModuleInstance.
+                                            Resources.GetWayPointTexture(wpDest.Contains(this.RelativeMousePosition), 
+                                                                         objectiveEntity.Owner == MistwarModule.ModuleInstance.WvW.CurrentTeam);
 
                     if (!_wayPointBounds.ContainsKey(wp.Id))
                     {
@@ -334,16 +336,16 @@ namespace Nekres.Mistwar.UI.Controls {
                 spriteBatch.DrawOnCtrl(this, _playerArrow, new Rectangle(tDest.X + tDest.Width / 4, tDest.Y + tDest.Height / 4, tDest.Width, tDest.Height), _playerArrow.Bounds, Color.White, (float) rot, new Vector2(_playerArrow.Width / 2f, _playerArrow.Height / 2f));
             }
 
-            if (MistwarModule.ModuleInstance.WvwService.IsLoading)
+            if (MistwarModule.ModuleInstance.WvW.IsRefreshing)
             {
                 var spinnerBnds = new Rectangle(0, 0, 70, 70);
                 LoadingSpinnerUtil.DrawLoadingSpinner(this, spriteBatch, spinnerBnds);
-                var size = Content.DefaultFont32.MeasureString(MistwarModule.ModuleInstance.WvwService.LoadingMessage);
+                var size = Content.DefaultFont32.MeasureString(MistwarModule.ModuleInstance.WvW.RefreshMessage);
                 var dest = new Rectangle((int)(spinnerBnds.X + spinnerBnds.Width / 2 - size.Width / 2), spinnerBnds.Bottom, (int)size.Width, (int)size.Height);
-                spriteBatch.DrawStringOnCtrl(this, MistwarModule.ModuleInstance.WvwService.LoadingMessage, Content.DefaultFont16, dest, Color.White, false, true, 1, HorizontalAlignment.Center);
+                spriteBatch.DrawStringOnCtrl(this, MistwarModule.ModuleInstance.WvW.RefreshMessage, Content.DefaultFont16, dest, Color.White, false, true, 1, HorizontalAlignment.Center);
             }
 
-            var lastChange = DateTime.UtcNow.Subtract(MistwarModule.ModuleInstance.WvwService.LastChange);
+            var lastChange = DateTime.UtcNow.Subtract(MistwarModule.ModuleInstance.WvW.LastChange);
             if (lastChange.TotalSeconds > 120) {
                 var warnBounds = new Rectangle(bounds.Width - 300, 0, 300, 32);
                 spriteBatch.DrawOnCtrl(this, _warnTriangle, new Rectangle(warnBounds.Left - 32, warnBounds.Top, 32, 32));

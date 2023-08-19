@@ -1,20 +1,19 @@
 ﻿using Blish_HUD;
 using Blish_HUD.Content;
 using Blish_HUD.Controls;
-using Blish_HUD.Modules.Managers;
+using Blish_HUD.Extended;
 using Gw2Sharp.WebApi.V2.Models;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Nekres.Mistwar.UI.Controls;
+using Nekres.Mistwar.Core.UI.Controls;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using Blish_HUD.Extended;
 using File = System.IO.File;
 using Rectangle = Microsoft.Xna.Framework.Rectangle;
-namespace Nekres.Mistwar.Services {
+namespace Nekres.Mistwar.Core.Services {
     internal class MapService : IDisposable
     {
         private float _opacity;
@@ -44,17 +43,13 @@ namespace Nekres.Mistwar.Services {
 
         private readonly IProgress<string>               _loadingIndicator;
         private          Dictionary<int, AsyncTexture2D> _mapCache;
-        private          DirectoriesManager              _dir;
-        private          WvwService                      _wvw;
         private          MapImage                        _mapControl;
         private          StandardWindow                  _window;
 
         private const int PADDING_RIGHT = 5;
 
-        public MapService(DirectoriesManager dir, WvwService wvw, IProgress<string> loadingIndicator)
+        public MapService(IProgress<string> loadingIndicator)
         {
-            _dir = dir;
-            _wvw = wvw;
             _loadingIndicator = loadingIndicator;
             _mapCache = new Dictionary<int, AsyncTexture2D>();
 
@@ -95,7 +90,7 @@ namespace Nekres.Mistwar.Services {
 
         public void DownloadMaps(int[] mapIds)
         {
-            if (this.IsReady || this.IsLoading || mapIds.IsNullOrEmpty()) {
+            if (mapIds.IsNullOrEmpty()) {
                 return;
             }
 
@@ -109,8 +104,6 @@ namespace Nekres.Mistwar.Services {
 
         private void LoadMapsInBackground(int[] mapIds)
         {
-            this.IsLoading = true;
-
             foreach (var id in mapIds)
             {
                 var t = DownloadMapImage(id);
@@ -120,8 +113,7 @@ namespace Nekres.Mistwar.Services {
                 // refactor of the code to support it would not yield much value.
             }
             _loadingIndicator.Report(null);
-
-            this.IsLoading = false;
+            IsLoading = false;
         }
 
         private async Task DownloadMapImage(int id) {
@@ -135,14 +127,14 @@ namespace Nekres.Mistwar.Services {
                 }
             }
 
-            var filePath = Path.Combine(_dir.GetFullDirectoryPath("mistwar"), $"{id}.png");
+            var filePath = Path.Combine(MistwarModule.ModuleInstance.DirectoriesManager.GetFullDirectoryPath("mistwar"), $"{id}.png");
 
             if (LoadFromCache(filePath, tex)) {
                 await ReloadMap();
                 return;
             }
 
-            var map = await MapUtil.GetMap(id);
+            var map = await MistwarModule.ModuleInstance.Resources.GetMap(id);
 
             if (map == null) {
                 return;
@@ -207,7 +199,7 @@ namespace Nekres.Mistwar.Services {
 
             _window.Title = map.Name;
 
-            var wvwObjectives = await _wvw.GetObjectives(GameService.Gw2Mumble.CurrentMap.Id);
+            var wvwObjectives = await MistwarModule.ModuleInstance.WvW.GetObjectives(GameService.Gw2Mumble.CurrentMap.Id);
 
             if (wvwObjectives.IsNullOrEmpty()) {
                 this.IsReady = false;
@@ -215,18 +207,18 @@ namespace Nekres.Mistwar.Services {
                 return;
             }
             _mapControl.WvwObjectives = wvwObjectives;
-            MistwarModule.ModuleInstance?.MarkerService?.ReloadMarkers(wvwObjectives);
+            MistwarModule.ModuleInstance?.Markers?.ReloadMarkers(wvwObjectives);
 
             this.IsReady = true;
         }
 
         private async Task<ContinentFloorRegionMap> GetMap(int mapId)
         {
-            var map = await MapUtil.GetMap(mapId);
+            var map = await MistwarModule.ModuleInstance.Resources.GetMap(mapId);
             if (map == null) {
                 return null;
             }
-            return await MapUtil.GetMapExpanded(map, map.DefaultFloor);
+            return await MistwarModule.ModuleInstance.Resources.GetMapExpanded(map, map.DefaultFloor);
         }
 
         public void Toggle(bool forceHide = false)
