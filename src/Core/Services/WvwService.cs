@@ -1,11 +1,15 @@
 ﻿using Blish_HUD;
 using Blish_HUD.Controls;
 using Blish_HUD.Extended;
+using Blish_HUD.Gw2WebApi;
+using Flurl;
+using Flurl.Http;
 using Gw2Sharp.WebApi.V2.Models;
 using Nekres.Mistwar.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Nekres.Mistwar.Core.Services {
@@ -74,13 +78,13 @@ namespace Nekres.Mistwar.Core.Services {
 
             this.CurrentGuild   = await GetRepresentedGuild();
 
-            var worldId = await GetWorldId();
-            if (worldId >= 0)
+            var teamId = await GetTeamId();
+            if (teamId >= 0)
             {
                 var mapIds = GetWvWMapIds();
                 var taskList = new List<Task>();
                 foreach (var id in mapIds) {
-                    var t = new Task<Task>(() => UpdateObjectives(worldId, id));
+                    var t = new Task<Task>(() => UpdateObjectives(teamId, id));
                     taskList.Add(t);
                     t.Start();
                 }
@@ -130,12 +134,34 @@ namespace Nekres.Mistwar.Core.Services {
 
         public async Task<int> GetWorldId()
         {
-            if (!MistwarModule.ModuleInstance.Gw2ApiManager.HasPermission(TokenPermission.Account)) {
+            if (!MistwarModule.ModuleInstance.Gw2ApiManager.IsAuthorized()) {
                 return -1;
             }
 
+            var url = MistwarModule.ModuleInstance.Gw2ApiManager.Gw2ApiClient.V2.Account.BaseUrl;
             var account = await TaskUtil.TryAsync(() => MistwarModule.ModuleInstance.Gw2ApiManager.Gw2ApiClient.V2.Account.GetAsync());
             return account?.World ?? -1;
+        }
+
+        public async Task<int> GetTeamId() {
+            if (!MistwarModule.ModuleInstance.Gw2ApiManager.IsAuthorized()) {
+                return -1;
+            }
+            var requestUrl = "https://api.guildwars2.com/v2/account".SetQueryParams(new {
+                v = "2024-07-20T01:00:00.000Z", // Schema to get the wvw object.
+                access_token = GetSubToken()
+            });
+            var json = await TaskUtil.TryAsync(() => requestUrl.GetStringAsync());
+            try {
+                return JsonDocument.Parse(json).RootElement.GetProperty("wvw").GetProperty("team_id").GetInt32();
+            } catch (Exception) {
+                return -1; // Account with no wvw data; no assigned team etc. Just ignore.
+            }
+        }
+
+        public string GetSubToken() {
+            var managedConnection = (ManagedConnection)MistwarModule.ModuleInstance.Gw2ApiManager.GetPrivateField("_connection").GetValue(MistwarModule.ModuleInstance.Gw2ApiManager);
+            return managedConnection.Connection.AccessToken;
         }
 
         public int[] GetWvWMapIds()
@@ -148,11 +174,11 @@ namespace Nekres.Mistwar.Core.Services {
             return await _wvwObjectiveCache.GetItem(mapId);
         }
 
-        private async Task UpdateObjectives(int worldId, int mapId)
+        private async Task UpdateObjectives(int teamId, int mapId)
         {
             var objEntities = await GetObjectives(mapId);
 
-            var match = await TaskUtil.TryAsync(() => MistwarModule.ModuleInstance.Gw2ApiManager.Gw2ApiClient.V2.Wvw.Matches.World(worldId).GetAsync());
+            var match = await TaskUtil.TryAsync(() => MistwarModule.ModuleInstance.Gw2ApiManager.Gw2ApiClient.V2.Wvw.Matches.World(teamId).GetAsync());
             
             if (match == null) {
                 return;
@@ -161,9 +187,9 @@ namespace Nekres.Mistwar.Core.Services {
             _teams = match.AllWorlds;
             // Fetch the users team
             this.CurrentTeam =
-                _teams.Blue.Contains(worldId) ? WvwOwner.Blue :
-                _teams.Red.Contains(worldId) ? WvwOwner.Red :
-                _teams.Green.Contains(worldId) ? WvwOwner.Green : WvwOwner.Unknown;
+                _teams.Blue.Contains(teamId) ? WvwOwner.Blue :
+                _teams.Red.Contains(teamId) ? WvwOwner.Red :
+                _teams.Green.Contains(teamId) ? WvwOwner.Green : WvwOwner.Unknown;
 
             var objectives = match.Maps.FirstOrDefault(x => x.Id == mapId)?.Objectives;
             if (objectives.IsNullOrEmpty()) {
