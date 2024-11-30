@@ -60,9 +60,13 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\submodules\bhud-extended\**\*.cs" Link="_Submodules\%(RecursiveDir)%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\submodules\bhud-extended\**\Properties\*.resx" Link="_Submodules\%(RecursiveDir)%(Filename)%(Extension)">
+      <!--Required to make the ResourceManager find translations -->
+      <LogicalName>Blish_HUD.Extended.Properties.%(Filename).resources</LogicalName>
+      <Visible>False</Visible>
+    </EmbeddedResource>
     <!-- Exclude AssemblyInfo.cs of submodule projects to avoid duplication error (Compile Error CS0579) -->
     <Compile Remove="..\submodules\**\AssemblyInfo.cs" />
-    <EmbeddedResource Include="..\submodules\bhud-extended\**\Resources\*.png" Link="_Submodules\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -198,8 +202,8 @@
       <HintPath>packages\AsyncClipboardService.1.7.1\lib\net45\AsyncClipboardService.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Blish HUD, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\BlishHUD.1.0.0\lib\net472\Blish HUD.exe</HintPath>
+    <Reference Include="Blish HUD, Version=1.2.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>packages\BlishHUD.1.2.0\lib\net472\Blish HUD.exe</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Flurl, Version=2.8.2.0, Culture=neutral, processorArchitecture=MSIL">
@@ -223,7 +227,7 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="Gw2Sharp, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\Gw2Sharp.1.7.3\lib\netstandard2.0\Gw2Sharp.dll</HintPath>
+      <HintPath>packages\Gw2Sharp.1.7.4\lib\netstandard2.0\Gw2Sharp.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.Bcl.AsyncInterfaces, Version=5.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
@@ -233,17 +237,17 @@
     <Reference Include="Microsoft.CSharp">
       <Private>False</Private>
     </Reference>
-    <Reference Include="Microsoft.IdentityModel.JsonWebTokens, Version=6.14.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>packages\Microsoft.IdentityModel.JsonWebTokens.6.14.1\lib\net472\Microsoft.IdentityModel.JsonWebTokens.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="Microsoft.IdentityModel.Abstractions, Version=6.34.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.IdentityModel.Abstractions.6.34.0\lib\net472\Microsoft.IdentityModel.Abstractions.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.IdentityModel.Logging, Version=6.14.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>packages\Microsoft.IdentityModel.Logging.6.14.1\lib\net472\Microsoft.IdentityModel.Logging.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="Microsoft.IdentityModel.JsonWebTokens, Version=6.34.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.IdentityModel.JsonWebTokens.6.34.0\lib\net472\Microsoft.IdentityModel.JsonWebTokens.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.IdentityModel.Tokens, Version=6.14.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>packages\Microsoft.IdentityModel.Tokens.6.14.1\lib\net472\Microsoft.IdentityModel.Tokens.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="Microsoft.IdentityModel.Logging, Version=6.34.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.IdentityModel.Logging.6.34.0\lib\net472\Microsoft.IdentityModel.Logging.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.IdentityModel.Tokens, Version=6.34.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.IdentityModel.Tokens.6.34.0\lib\net472\Microsoft.IdentityModel.Tokens.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="MonoGame.Extended, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
@@ -345,9 +349,8 @@
     </Reference>
     <Reference Include="System.Globalization.Calendars" />
     <Reference Include="System.IdentityModel" />
-    <Reference Include="System.IdentityModel.Tokens.Jwt, Version=6.14.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>packages\System.IdentityModel.Tokens.Jwt.6.14.1\lib\net472\System.IdentityModel.Tokens.Jwt.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="System.IdentityModel.Tokens.Jwt, Version=6.34.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>packages\System.IdentityModel.Tokens.Jwt.6.34.0\lib\net472\System.IdentityModel.Tokens.Jwt.dll</HintPath>
     </Reference>
     <Reference Include="System.IO" />
     <Reference Include="System.IO.Compression" />
@@ -377,9 +380,8 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=5.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>packages\System.Runtime.CompilerServices.Unsafe.5.0.0\lib\net45\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>packages\System.Runtime.CompilerServices.Unsafe.6.0.0\lib\net461\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
     </Reference>
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
@@ -399,9 +401,8 @@
       <HintPath>packages\System.ServiceModel.Primitives.4.9.0\lib\net461\System.ServiceModel.Primitives.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="System.Text.Encodings.Web, Version=5.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>packages\System.Text.Encodings.Web.5.0.0\lib\net461\System.Text.Encodings.Web.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="System.Text.Encodings.Web, Version=6.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>packages\System.Text.Encodings.Web.6.0.0\lib\net461\System.Text.Encodings.Web.dll</HintPath>
     </Reference>
     <Reference Include="System.Text.Json, Version=5.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>packages\System.Text.Json.5.0.0\lib\net461\System.Text.Json.dll</HintPath>
@@ -443,7 +444,7 @@
     </PropertyGroup>
     <Error Condition="!Exists('packages\System.Resources.Extensions.6.0.0\buildTransitive\net461\System.Resources.Extensions.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\System.Resources.Extensions.6.0.0\buildTransitive\net461\System.Resources.Extensions.targets'))" />
     <Error Condition="!Exists('packages\MonoGame.Framework.WindowsDX.3.8.0.1641\build\MonoGame.Framework.WindowsDX.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\MonoGame.Framework.WindowsDX.3.8.0.1641\build\MonoGame.Framework.WindowsDX.targets'))" />
-    <Error Condition="!Exists('packages\BlishHUD.1.0.0\build\BlishHUD.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\BlishHUD.1.0.0\build\BlishHUD.targets'))" />
+    <Error Condition="!Exists('packages\BlishHUD.1.2.0\build\BlishHUD.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\BlishHUD.1.2.0\build\BlishHUD.targets'))" />
   </Target>
   <Import Project="packages\System.Resources.Extensions.6.0.0\buildTransitive\net461\System.Resources.Extensions.targets" Condition="Exists('packages\System.Resources.Extensions.6.0.0\buildTransitive\net461\System.Resources.Extensions.targets')" />
   <ProjectExtensions>
@@ -452,5 +453,5 @@
     </VisualStudio>
   </ProjectExtensions>
   <Import Project="packages\MonoGame.Framework.WindowsDX.3.8.0.1641\build\MonoGame.Framework.WindowsDX.targets" Condition="Exists('packages\MonoGame.Framework.WindowsDX.3.8.0.1641\build\MonoGame.Framework.WindowsDX.targets')" />
-  <Import Project="packages\BlishHUD.1.0.0\build\BlishHUD.targets" Condition="Exists('packages\BlishHUD.1.0.0\build\BlishHUD.targets')" />
+  <Import Project="packages\BlishHUD.1.2.0\build\BlishHUD.targets" Condition="Exists('packages\BlishHUD.1.2.0\build\BlishHUD.targets')" />
 </Project>

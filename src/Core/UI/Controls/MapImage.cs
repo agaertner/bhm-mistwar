@@ -127,12 +127,12 @@ namespace Nekres.Mistwar.Core.UI.Controls {
                 GameService.Content.PlaySoundEffectByName("button-click");
                 if (PInvoke.IsLControlPressed())
                 {
-                    ChatUtil.Send(wp.ChatLink, MistwarModule.ModuleInstance.ChatMessageKeySetting.Value);
+                    await ChatUtil.Send(wp.ChatLink, MistwarModule.ModuleInstance.ChatMessageKeySetting.Value);
                     break;
                 }
                 if (PInvoke.IsLShiftPressed())
                 {
-                    ChatUtil.Insert(wp.ChatLink, MistwarModule.ModuleInstance.ChatMessageKeySetting.Value);
+                    await ChatUtil.Insert(wp.ChatLink, MistwarModule.ModuleInstance.ChatMessageKeySetting.Value);
                     break;
                 }
                 if (await ClipboardUtil.WindowsClipboardService.SetTextAsync(wp.ChatLink))

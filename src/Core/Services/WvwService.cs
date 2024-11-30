@@ -101,7 +101,7 @@ namespace Nekres.Mistwar.Core.Services {
 
         public async Task<Guid> GetRepresentedGuild()
         {
-            if (!MistwarModule.ModuleInstance.Gw2ApiManager.HasPermissions(new []{TokenPermission.Account, TokenPermission.Characters})) {
+            if (!MistwarModule.ModuleInstance.Gw2ApiManager.IsAuthorized(false, TokenPermission.Characters)) {
                 return Guid.Empty;
             }
 
