@@ -159,26 +159,22 @@ namespace Nekres.Mistwar {
         protected override void OnModuleLoaded(EventArgs e)
         {
             CornerTex   = ContentsManager.GetTexture("corner_icon.png");
-            _moduleIcon = new CornerIcon(CornerTex, this.Name);
-
             ColorIntensitySetting.SettingChanged                    += OnColorIntensitySettingChanged;
             ToggleMapKeySetting.Value.Activated                     += OnToggleKeyActivated;
             ToggleMarkersKeySetting.Value.Activated                 += OnToggleMarkersKeyActivated;
             EnableMarkersSetting.SettingChanged                     += OnEnableMarkersSettingChanged;
             GameService.Gw2Mumble.CurrentMap.MapChanged             += OnMapChanged;
             GameService.Gw2Mumble.UI.IsMapOpenChanged               += OnIsMapOpenChanged;
-            GameService.GameIntegration.Gw2Instance.IsInGameChanged += OnIsInGameChanged;
             ToggleMapKeySetting.Value.Enabled                       =  true;
             ToggleMarkersKeySetting.Value.Enabled                   =  true;
 
             OnColorIntensitySettingChanged(null, new ValueChangedEventArgs<float>(0, ColorIntensitySetting.Value));
 
+            _moduleIcon       =  new CornerIcon(CornerTex, this.Name);
             _moduleIcon.Click += OnModuleIconClick;
-            // Base handler must be called
-
             Maps.DownloadMaps(WvW.GetWvWMapIds());
 
-            base.OnModuleLoaded(e);
+            base.OnModuleLoaded(e); // Base handler must be called
         }
 
         private void OnModuleIconClick(object o, MouseEventArgs e)
@@ -199,10 +195,9 @@ namespace Nekres.Mistwar {
             if (_moduleIcon == null) {
                 return;
             }
-
             _moduleIcon.LoadingMessage = loadingMessage;
-            if (loadingMessage == null && !GameService.Gw2Mumble.CurrentMap.Type.IsWvWMatch()) {
-                _moduleIcon?.Dispose(); // Dispose on completion of initialization if we are not in WvW.
+            if (loadingMessage == null) {
+                InvalidateCornerIcon(); // Dispose on completion of initialization if we are not in WvW.
             }
         }
 
@@ -218,7 +213,7 @@ namespace Nekres.Mistwar {
                 return false;
             }
 
-            if (Maps.IsLoading) {
+            if (Maps.IsLoading || !Maps.IsAvailable) {
                 ScreenNotification.ShowNotification($"{Name} unavailable. Map not loaded.", ScreenNotification.NotificationType.Error);
                 GameService.Content.PlaySoundEffectByName("error");
                 return false;
@@ -251,31 +246,20 @@ namespace Nekres.Mistwar {
             ToggleMapKeySetting.Value.Enabled = GameService.Gw2Mumble.CurrentMap.Type.IsWvWMatch();
         }
 
-        private void OnMapChanged(object o, ValueEventArgs<int> e)
-        {
-            if (GameService.Gw2Mumble.CurrentMap.Type.IsWvWMatch())
-            {
-                _moduleIcon?.Dispose();
-                _moduleIcon = new CornerIcon(CornerTex, this.Name);
-                _moduleIcon.Click += OnModuleIconClick;
-                ToggleMapKeySetting.Value.Enabled = true;
-                return;
-            }
-            _moduleIcon?.Dispose();
-            ToggleMapKeySetting.Value.Enabled = false;
+        private void OnMapChanged(object o, ValueEventArgs<int> e) {
+            InvalidateCornerIcon();
         }
 
-        private void OnIsInGameChanged(object o, ValueEventArgs<bool> e)
-        {
-            if (e.Value && GameService.Gw2Mumble.CurrentMap.Type.IsWvWMatch())
-            {
+        private void InvalidateCornerIcon() {
+            if (GameService.Gw2Mumble.CurrentMap.Type.IsWvWMatch()) {
                 _moduleIcon?.Dispose();
-                _moduleIcon = new CornerIcon(CornerTex, this.Name);
-                _moduleIcon.Click += OnModuleIconClick;
-                ToggleMapKeySetting.Value.Enabled = true;
+                _moduleIcon                       =  new CornerIcon(CornerTex, this.Name);
+                _moduleIcon.Click                 += OnModuleIconClick;
+                ToggleMapKeySetting.Value.Enabled =  true;
                 return;
             }
             _moduleIcon?.Dispose();
+            _moduleIcon = null;
             ToggleMapKeySetting.Value.Enabled = false;
         }
 
@@ -311,7 +295,6 @@ namespace Nekres.Mistwar {
             EnableMarkersSetting.SettingChanged                     -= OnEnableMarkersSettingChanged;
             ToggleMapKeySetting.Value.Enabled                       =  false;
             ToggleMarkersKeySetting.Value.Enabled                   =  false;
-            GameService.GameIntegration.Gw2Instance.IsInGameChanged -= OnIsInGameChanged;
             GameService.Gw2Mumble.CurrentMap.MapChanged             -= OnMapChanged;
             GameService.Gw2Mumble.UI.IsMapOpenChanged               -= OnIsMapOpenChanged;
 
